@@ -1,0 +1,42 @@
+{
+  "name": "johnnyxlemonade/cms-core",
+  "description": "Reusable public CMS route runtime for Lemonade.",
+  "type": "library",
+  "license": "Apache-2.0",
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/johnnyxlemonade/framework"
+    }
+  ],
+  "require": {
+    "php": ">=8.3 <8.6",
+    "johnnyxlemonade/framework": "dev-master"
+  },
+  "autoload": {
+    "psr-4": {
+      "Lemonade\\Cms\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Lemonade\\Cms\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "cs:check": "@php vendor/bin/php-cs-fixer fix --dry-run --diff --allow-risky=yes",
+    "cs:fix": "@php vendor/bin/php-cs-fixer fix --allow-risky=yes",
+    "stan": "@php vendor/bin/phpstan analyse --memory-limit=4G",
+    "test": "@php vendor/bin/phpunit",
+    "qa": ["@cs:check", "@stan", "@test"]
+  },
+  "require-dev": {
+    "friendsofphp/php-cs-fixer": "^3.94",
+    "nyholm/psr7": "^1.8",
+    "phpstan/phpstan": "2.3.0",
+    "phpstan/phpstan-strict-rules": "2.1.0",
+    "phpunit/phpunit": "^10.5"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
