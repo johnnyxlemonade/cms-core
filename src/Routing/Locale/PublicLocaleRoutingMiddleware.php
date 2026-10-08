@@ -17,11 +17,13 @@ use Psr\Http\Server\RequestHandlerInterface;
  */
 final readonly class PublicLocaleRoutingMiddleware implements MiddlewareInterface
 {
+    public const BYPASS_ATTRIBUTE = 'lemonade.public_locale_bypass';
+
     /**
-     * Nastavuje sdileny request-scoped locale vysledek a framework response factory
+     * Nastavuje lazy locale resolver a framework response factory
      */
     public function __construct(
-        private PublicLocaleResolution $locale,
+        private PublicLocaleResolver $resolver,
         private ResponseFactoryInterface $responses,
     ) {}
 
@@ -30,7 +32,12 @@ final readonly class PublicLocaleRoutingMiddleware implements MiddlewareInterfac
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $redirectTo = $this->locale->redirectTo();
+        if ($request->getAttribute(self::BYPASS_ATTRIBUTE) === true) {
+            return $handler->handle($request);
+        }
+
+        $resolution = $this->resolver->resolve();
+        $redirectTo = $resolution->redirectTo();
         if ($redirectTo !== null) {
             $query = $request->getUri()->getQuery();
 
@@ -38,12 +45,12 @@ final readonly class PublicLocaleRoutingMiddleware implements MiddlewareInterfac
                 ->createResponse(301)
                 ->withHeader('Location', $query === '' ? $redirectTo : $redirectTo . '?' . $query);
         }
-        $locale = $this->locale->locale();
-        $path = $this->locale->path();
+        $locale = $resolution->locale();
+        $path = $resolution->path();
         if ($locale === null || $path === null) {
             throw NotFoundHttpException::create();
         }
-        if ($locale === $this->locale->defaultLocale()) {
+        if ($locale === $resolution->defaultLocale()) {
             return $handler->handle($request);
         }
 
