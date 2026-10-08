@@ -12,6 +12,7 @@ use Lemonade\Cms\Routing\Cms\PublicCmsRouteRegistrar;
 use Lemonade\Cms\Routing\Cms\PublicCmsRouteResolver;
 use Lemonade\Cms\Routing\Locale\PublicLocaleResolution;
 use Lemonade\Cms\Routing\Locale\PublicLocaleResolver;
+use Lemonade\Cms\Routing\Locale\PublicLocaleRoutingMiddleware;
 use Lemonade\Framework\Container\Container;
 use PHPUnit\Framework\TestCase;
 
@@ -33,6 +34,7 @@ final class CmsCoreServiceProviderTest extends TestCase
         self::assertTrue($container->isBound(CmsRouteReservationService::class));
         self::assertTrue($container->isBound(PublicLocaleResolver::class));
         self::assertTrue($container->isBound(PublicLocaleResolution::class));
+        self::assertTrue($container->isBound(PublicLocaleRoutingMiddleware::class));
         self::assertTrue($container->isBound(PublicCmsRouteResolver::class));
         self::assertTrue($container->isBound(PublicCmsRouteController::class));
         self::assertTrue($container->isBound(PublicCmsRouteRegistrar::class));

@@ -17,10 +17,12 @@ use Lemonade\Cms\Routing\Cms\PublicCmsRouteResolver;
 use Lemonade\Cms\Routing\Cms\PublicCmsUrlBuilder;
 use Lemonade\Cms\Routing\Locale\PublicLocaleResolution;
 use Lemonade\Cms\Routing\Locale\PublicLocaleResolver;
+use Lemonade\Cms\Routing\Locale\PublicLocaleRoutingMiddleware;
 use Lemonade\Framework\Container\ContainerBuilderInterface;
 use Lemonade\Framework\Container\ContainerInterface;
 use Lemonade\Framework\Core\ServiceProviderInterface;
 use Lemonade\Framework\Database\Migration\MigrationRegistry;
+use Lemonade\Framework\Http\Middleware\MiddlewareStack;
 use Lemonade\Framework\Routing\RouteRegistrarInterface;
 
 /**
@@ -45,6 +47,10 @@ final class CmsCoreServiceProvider implements ServiceProviderInterface
             PublicLocaleResolution::class,
             static fn(ContainerInterface $container): PublicLocaleResolution => $container->get(PublicLocaleResolver::class)->resolve(),
         );
+        $container->scoped(PublicLocaleRoutingMiddleware::class, PublicLocaleRoutingMiddleware::class);
+        if ($container->isBound(MiddlewareStack::class)) {
+            $container->get(MiddlewareStack::class)->prepend(PublicLocaleRoutingMiddleware::class);
+        }
         $container->singleton(PublicCmsUrlBuilder::class, PublicCmsUrlBuilder::class);
         $container->singleton(PublicCmsRouteHandlerRegistry::class, PublicCmsRouteHandlerRegistry::class);
         $container->singleton(PublicCmsCollectionHandlerRegistry::class, PublicCmsCollectionHandlerRegistry::class);
