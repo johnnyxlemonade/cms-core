@@ -6,16 +6,17 @@ namespace Lemonade\Cms;
 
 use Lemonade\Cms\Http\Controller\PublicCmsRouteController;
 use Lemonade\Cms\Migrations\CreateCoreCmsRoutes;
-use Lemonade\Cms\Routing\CmsRouteCandidateResolver;
-use Lemonade\Cms\Routing\CmsRouteRepository;
-use Lemonade\Cms\Routing\CmsRouteRepositoryInterface;
-use Lemonade\Cms\Routing\CmsRouteReservationService;
-use Lemonade\Cms\Routing\PublicCmsCollectionHandlerRegistry;
-use Lemonade\Cms\Routing\PublicCmsRouteHandlerRegistry;
-use Lemonade\Cms\Routing\PublicCmsRouteRegistrar;
-use Lemonade\Cms\Routing\PublicCmsRouteResolver;
-use Lemonade\Cms\Routing\PublicCmsUrlBuilder;
-use Lemonade\Cms\Routing\PublicLocaleResolver;
+use Lemonade\Cms\Routing\Cms\CmsRouteCandidateResolver;
+use Lemonade\Cms\Routing\Cms\CmsRouteRepository;
+use Lemonade\Cms\Routing\Cms\CmsRouteRepositoryInterface;
+use Lemonade\Cms\Routing\Cms\CmsRouteReservationService;
+use Lemonade\Cms\Routing\Cms\PublicCmsCollectionHandlerRegistry;
+use Lemonade\Cms\Routing\Cms\PublicCmsRouteHandlerRegistry;
+use Lemonade\Cms\Routing\Cms\PublicCmsRouteRegistrar;
+use Lemonade\Cms\Routing\Cms\PublicCmsRouteResolver;
+use Lemonade\Cms\Routing\Cms\PublicCmsUrlBuilder;
+use Lemonade\Cms\Routing\Locale\PublicLocaleResolution;
+use Lemonade\Cms\Routing\Locale\PublicLocaleResolver;
 use Lemonade\Framework\Container\ContainerBuilderInterface;
 use Lemonade\Framework\Container\ContainerInterface;
 use Lemonade\Framework\Core\ServiceProviderInterface;
@@ -39,7 +40,11 @@ final class CmsCoreServiceProvider implements ServiceProviderInterface
             CmsRouteRepositoryInterface::class,
             static fn(ContainerInterface $container): CmsRouteRepository => $container->get(CmsRouteRepository::class),
         );
-        $container->singleton(PublicLocaleResolver::class, PublicLocaleResolver::class);
+        $container->scoped(PublicLocaleResolver::class, PublicLocaleResolver::class);
+        $container->scoped(
+            PublicLocaleResolution::class,
+            static fn(ContainerInterface $container): PublicLocaleResolution => $container->get(PublicLocaleResolver::class)->resolve(),
+        );
         $container->singleton(PublicCmsUrlBuilder::class, PublicCmsUrlBuilder::class);
         $container->singleton(PublicCmsRouteHandlerRegistry::class, PublicCmsRouteHandlerRegistry::class);
         $container->singleton(PublicCmsCollectionHandlerRegistry::class, PublicCmsCollectionHandlerRegistry::class);

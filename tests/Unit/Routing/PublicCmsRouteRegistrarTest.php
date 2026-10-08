@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Lemonade\Cms\Tests\Unit\Routing;
 
-use Lemonade\Cms\Routing\PublicCmsRouteRegistrar;
+use Lemonade\Cms\Routing\Cms\PublicCmsRouteRegistrar;
 use Lemonade\Framework\Routing\ControllerAction;
 use Lemonade\Framework\Routing\Router;
 use Nyholm\Psr7\ServerRequest;

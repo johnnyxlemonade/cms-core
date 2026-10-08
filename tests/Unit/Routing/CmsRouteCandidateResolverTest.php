@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Lemonade\Cms\Tests\Unit\Routing;
 
-use Lemonade\Cms\Routing\CmsRoute;
-use Lemonade\Cms\Routing\CmsRouteCandidateResolver;
+use Lemonade\Cms\Routing\Cms\CmsRoute;
+use Lemonade\Cms\Routing\Cms\CmsRouteCandidateResolver;
 use PHPUnit\Framework\TestCase;
 
 /**

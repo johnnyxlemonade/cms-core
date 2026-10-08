@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Lemonade\Cms\Http\Controller;
 
-use Lemonade\Cms\Routing\PublicCmsRouteResolver;
+use Lemonade\Cms\Routing\Cms\PublicCmsRouteResolver;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -25,8 +25,9 @@ final class PublicCmsRouteController
      */
     public function show(string $path, ServerRequestInterface $request): ResponseInterface
     {
+        unset($path);
+
         return $this->resolver->resolve(
-            $request->getUri()->getPath(),
             $request->getUri()->getQuery(),
         );
     }

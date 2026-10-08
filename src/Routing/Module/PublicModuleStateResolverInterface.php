@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Lemonade\Cms\Routing;
+namespace Lemonade\Cms\Routing\Module;
 
 /**
  * Definuje zdroj verejneho stavu modulu

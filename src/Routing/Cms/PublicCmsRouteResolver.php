@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Lemonade\Cms\Routing;
+namespace Lemonade\Cms\Routing\Cms;
+
+use Lemonade\Cms\Routing\Locale\PublicLocaleResolution;
+use Lemonade\Cms\Routing\Module\PublicModuleRoutePrefixRepositoryInterface;
+use Lemonade\Cms\Routing\Module\PublicModuleStateResolverInterface;
 
 use Lemonade\Framework\Http\Exception\NotFoundHttpException;
 use Lemonade\Framework\View\ViewRendererInterface;
@@ -18,7 +22,7 @@ final class PublicCmsRouteResolver
      * Nastavuje locale, canonical routy a prispene handlery modulu
      */
     public function __construct(
-        private readonly PublicLocaleResolver $locales,
+        private readonly PublicLocaleResolution $locale,
         private readonly CmsRouteRepositoryInterface $routes,
         private readonly PublicModuleStateResolverInterface $modules,
         private readonly PublicModuleRoutePrefixRepositoryInterface $prefixes,
@@ -31,9 +35,9 @@ final class PublicCmsRouteResolver
     /**
      * Vrati redirect, odpoved handleru nebo not found pro verejnou cestu
      */
-    public function resolve(string $requestPath, string $queryString = ''): ResponseInterface
+    public function resolve(string $queryString = ''): ResponseInterface
     {
-        $locale = $this->locales->resolve($requestPath);
+        $locale = $this->locale;
         $redirectTo = $locale->redirectTo();
         if ($redirectTo !== null) {
             $location = $queryString === '' ? $redirectTo : $redirectTo . '?' . $queryString;
@@ -46,7 +50,7 @@ final class PublicCmsRouteResolver
             return $this->notFound();
         }
 
-        $collectionResponse = $this->resolveCollection($routeLocale, $routePath);
+        $collectionResponse = $this->resolveCollection($locale, $routeLocale, $routePath);
         if ($collectionResponse !== null) {
             return $collectionResponse;
         }
@@ -66,13 +70,13 @@ final class PublicCmsRouteResolver
             return $this->notFound();
         }
 
-        return $handler->handle($route->entityId(), $route->locale(), $route, $this->views) ?? $this->notFound();
+        return $handler->handle($route->entityId(), $locale, $route, $this->views) ?? $this->notFound();
     }
 
     /**
      * Preda cestu shodnou s runtime prefixem collection handleru modulu
      */
-    private function resolveCollection(string $locale, string $path): ?ResponseInterface
+    private function resolveCollection(PublicLocaleResolution $resolution, string $locale, string $path): ?ResponseInterface
     {
         if (str_contains($path, '/')) {
             return null;
@@ -84,7 +88,7 @@ final class PublicCmsRouteResolver
 
         $handler = $this->collections->handlerFor($moduleCode);
 
-        return $handler?->handleCollection($locale, $path, $this->views);
+        return $handler?->handleCollection($resolution, $path, $this->views);
     }
 
     /**

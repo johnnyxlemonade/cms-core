@@ -4,19 +4,22 @@ declare(strict_types=1);
 
 namespace Lemonade\Cms\Tests\Unit\Routing;
 
-use Lemonade\Cms\Routing\CmsRoute;
-use Lemonade\Cms\Routing\CmsRouteRepositoryInterface;
-use Lemonade\Cms\Routing\PublicCmsCollectionHandlerRegistry;
-use Lemonade\Cms\Routing\PublicCmsRouteHandlerInterface;
-use Lemonade\Cms\Routing\PublicCmsRouteHandlerRegistry;
-use Lemonade\Cms\Routing\PublicCmsRouteResolver;
-use Lemonade\Cms\Routing\PublicLocaleRegistryInterface;
-use Lemonade\Cms\Routing\PublicLocaleResolver;
-use Lemonade\Cms\Routing\PublicModuleRoutePrefixRepositoryInterface;
-use Lemonade\Cms\Routing\PublicModuleStateResolverInterface;
+use Lemonade\Cms\Routing\Cms\CmsRoute;
+use Lemonade\Cms\Routing\Cms\CmsRouteRepositoryInterface;
+use Lemonade\Cms\Routing\Cms\PublicCmsCollectionHandlerRegistry;
+use Lemonade\Cms\Routing\Cms\PublicCmsRouteHandlerInterface;
+use Lemonade\Cms\Routing\Cms\PublicCmsRouteHandlerRegistry;
+use Lemonade\Cms\Routing\Cms\PublicCmsRouteResolver;
+use Lemonade\Cms\Routing\Locale\PublicLocaleRegistryInterface;
+use Lemonade\Cms\Routing\Locale\PublicLocaleResolution;
+use Lemonade\Cms\Routing\Locale\PublicLocaleResolver;
+use Lemonade\Cms\Routing\Locale\PublicLocaleSnapshot;
+use Lemonade\Cms\Routing\Module\PublicModuleRoutePrefixRepositoryInterface;
+use Lemonade\Cms\Routing\Module\PublicModuleStateResolverInterface;
 use Lemonade\Framework\Http\Exception\NotFoundHttpException;
 use Lemonade\Framework\View\ViewRendererInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
+use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 
@@ -24,9 +27,9 @@ final class PublicCmsRouteResolverTest extends TestCase
 {
     public function testCsWithoutPrefixUsesTheDefaultLocale(): void
     {
-        $resolver = new PublicLocaleResolver(new FakeLocaleRegistry());
+        $resolver = $this->localeResolver('/aktuality/x');
 
-        $resolution = $resolver->resolve('/aktuality/x');
+        $resolution = $resolver->resolve();
 
         self::assertSame('cs', $resolution->locale());
         self::assertSame('aktuality/x', $resolution->path());
@@ -34,7 +37,7 @@ final class PublicCmsRouteResolverTest extends TestCase
 
     public function testExplicitCsPrefixRedirectsToTheUnprefixedUrl(): void
     {
-        $response = $this->resolver()->resolve('/cs/foo');
+        $response = $this->resolver('/cs/foo')->resolve();
 
         self::assertSame(301, $response->getStatusCode());
         self::assertSame('/foo', $response->getHeaderLine('Location'));
@@ -42,7 +45,7 @@ final class PublicCmsRouteResolverTest extends TestCase
 
     public function testExplicitCsPrefixRedirectKeepsTheQueryString(): void
     {
-        $response = $this->resolver()->resolve('/cs/aktuality/test', 'page=2&utm_source=mail');
+        $response = $this->resolver('/cs/aktuality/test')->resolve('page=2&utm_source=mail');
 
         self::assertSame(301, $response->getStatusCode());
         self::assertSame('/aktuality/test?page=2&utm_source=mail', $response->getHeaderLine('Location'));
@@ -50,9 +53,9 @@ final class PublicCmsRouteResolverTest extends TestCase
 
     public function testNonDefaultEnabledLocaleIsSeparatedFromTheRoutePath(): void
     {
-        $resolver = new PublicLocaleResolver(new FakeLocaleRegistry());
+        $resolver = $this->localeResolver('/en/news/x');
 
-        $resolution = $resolver->resolve('/en/news/x');
+        $resolution = $resolver->resolve();
 
         self::assertSame('en', $resolution->locale());
         self::assertSame('news/x', $resolution->path());
@@ -62,14 +65,14 @@ final class PublicCmsRouteResolverTest extends TestCase
     {
         $this->expectException(NotFoundHttpException::class);
 
-        $this->resolver()->resolve('/aktuality/chybi');
+        $this->resolver('/aktuality/chybi')->resolve();
     }
 
     public function testDisabledLocaleReturnsNotFound(): void
     {
         $this->expectException(NotFoundHttpException::class);
 
-        $this->resolver()->resolve('/de/neuigkeiten/x');
+        $this->resolver('/de/neuigkeiten/x')->resolve();
     }
 
     public function testRouteWithDisabledModuleReturnsNotFound(): void
@@ -77,7 +80,7 @@ final class PublicCmsRouteResolverTest extends TestCase
         $routes = new FakeRoutes([new CmsRoute(1, 'news', 42, 'cs', 'aktuality/x')]);
         $this->expectException(NotFoundHttpException::class);
 
-        $this->resolver(routes: $routes, modules: new FakeModules([]))->resolve('/aktuality/x');
+        $this->resolver('/aktuality/x', routes: $routes, modules: new FakeModules([]))->resolve();
     }
 
     public function testRouteWithoutRegisteredHandlerReturnsNotFound(): void
@@ -85,7 +88,7 @@ final class PublicCmsRouteResolverTest extends TestCase
         $routes = new FakeRoutes([new CmsRoute(1, 'news', 42, 'cs', 'aktuality/x')]);
         $this->expectException(NotFoundHttpException::class);
 
-        $this->resolver(routes: $routes)->resolve('/aktuality/x');
+        $this->resolver('/aktuality/x', routes: $routes)->resolve();
     }
 
     public function testRouteWithOutdatedDatabasePrefixReturnsNotFound(): void
@@ -95,7 +98,7 @@ final class PublicCmsRouteResolverTest extends TestCase
         $handlers->register('news', new FakeHandler());
         $this->expectException(NotFoundHttpException::class);
 
-        $this->resolver(routes: $routes, prefixes: new FakePrefixes(['news:cs' => 'novinky']), handlers: $handlers)->resolve('/aktuality/x');
+        $this->resolver('/aktuality/x', routes: $routes, prefixes: new FakePrefixes(['news:cs' => 'novinky']), handlers: $handlers)->resolve();
     }
 
     public function testValidRouteCallsItsHandlerWithEntityAndLocale(): void
@@ -105,28 +108,47 @@ final class PublicCmsRouteResolverTest extends TestCase
         $handlers = new PublicCmsRouteHandlerRegistry();
         $handlers->register('news', $handler);
 
-        $response = $this->resolver(routes: $routes, handlers: $handlers)->resolve('/aktuality/x');
+        $response = $this->resolver('/aktuality/x', routes: $routes, handlers: $handlers)->resolve();
 
         self::assertSame(200, $response->getStatusCode());
-        self::assertSame([42, 'cs', 'aktuality/x'], $handler->received);
+        self::assertSame([42, 'cs', 'cs', 'aktuality/x'], $handler->received);
     }
 
     public function testCanonicalUrlBuilderOmitsOnlyTheDefaultLocale(): void
     {
-        $builder = new \Lemonade\Cms\Routing\PublicCmsUrlBuilder(new FakeLocaleRegistry());
+        $builder = new \Lemonade\Cms\Routing\Cms\PublicCmsUrlBuilder();
+        $resolution = PublicLocaleResolution::route('cs', 'cs', '');
 
-        self::assertSame('/aktuality/x', $builder->build('cs', 'aktuality/x'));
-        self::assertSame('/en/news/x', $builder->build('en', 'news/x'));
+        self::assertSame('/aktuality/x', $builder->build($resolution, 'cs', 'aktuality/x'));
+        self::assertSame('/en/news/x', $builder->build($resolution, 'en', 'news/x'));
+    }
+
+    /**
+     * Overuje, ze request-scoped resolver nacte snapshot jen jednou
+     */
+    public function testMemoizesTheCurrentRequestResolution(): void
+    {
+        $locales = new FakeLocaleRegistry();
+        $resolver = new PublicLocaleResolver($locales, new ServerRequest('GET', '/en/news/x'));
+
+        self::assertSame($resolver->resolve(), $resolver->resolve());
+        self::assertSame(1, $locales->snapshotCalls);
+    }
+
+    private function localeResolver(string $path): PublicLocaleResolver
+    {
+        return new PublicLocaleResolver(new FakeLocaleRegistry(), new ServerRequest('GET', $path));
     }
 
     private function resolver(
+        string $path,
         ?CmsRouteRepositoryInterface $routes = null,
         ?PublicModuleStateResolverInterface $modules = null,
         ?PublicModuleRoutePrefixRepositoryInterface $prefixes = null,
         ?PublicCmsRouteHandlerRegistry $handlers = null,
     ): PublicCmsRouteResolver {
         return new PublicCmsRouteResolver(
-            new PublicLocaleResolver(new FakeLocaleRegistry()),
+            $this->localeResolver($path)->resolve(),
             $routes ?? new FakeRoutes(),
             $modules ?? new FakeModules(['news']),
             $prefixes ?? new FakePrefixes(['news:cs' => 'aktuality', 'news:en' => 'news']),
@@ -140,19 +162,17 @@ final class PublicCmsRouteResolverTest extends TestCase
 
 final class FakeLocaleRegistry implements PublicLocaleRegistryInterface
 {
-    public function defaultLocale(): string
-    {
-        return 'cs';
-    }
+    public int $snapshotCalls = 0;
 
-    public function isEnabledNonDefault(string $locale): bool
+    public function snapshot(): PublicLocaleSnapshot
     {
-        return $locale === 'en';
-    }
+        ++$this->snapshotCalls;
 
-    public function isKnownLocale(string $locale): bool
-    {
-        return in_array($locale, ['cs', 'en', 'de'], true);
+        return PublicLocaleSnapshot::fromRows([
+            ['code' => 'cs', 'enabled' => 1, 'is_default' => 1],
+            ['code' => 'en', 'enabled' => 1, 'is_default' => 0],
+            ['code' => 'de', 'enabled' => 0, 'is_default' => 0],
+        ]);
     }
 }
 
@@ -211,12 +231,16 @@ final class FakePrefixes implements PublicModuleRoutePrefixRepositoryInterface
 
 final class FakeHandler implements PublicCmsRouteHandlerInterface
 {
-    /** @var array{int, string, string}|null */
+    /** @var array{int, string, string, string}|null */
     public ?array $received = null;
 
-    public function handle(int $entityId, string $locale, CmsRoute $route, ViewRendererInterface $views): ResponseInterface
-    {
-        $this->received = [$entityId, $locale, $route->path()];
+    public function handle(
+        int $entityId,
+        PublicLocaleResolution $resolution,
+        CmsRoute $route,
+        ViewRendererInterface $views,
+    ): ResponseInterface {
+        $this->received = [$entityId, $resolution->defaultLocale(), (string) $resolution->locale(), $route->path()];
 
         return (new Psr17Factory())->createResponse(200);
     }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Lemonade\Cms\Routing;
+namespace Lemonade\Cms\Routing\Cms;
 
 use Lemonade\Cms\Http\Controller\PublicCmsRouteController;
 use Lemonade\Framework\Routing\ControllerAction;

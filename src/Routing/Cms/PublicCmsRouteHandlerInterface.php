@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Lemonade\Cms\Routing;
+namespace Lemonade\Cms\Routing\Cms;
+
+use Lemonade\Cms\Routing\Locale\PublicLocaleResolution;
 
 use Lemonade\Framework\View\ViewRendererInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -15,5 +17,10 @@ interface PublicCmsRouteHandlerInterface
     /**
      * Obslouzi verejnou CMS cestu nebo vrati prazdny vysledek
      */
-    public function handle(int $entityId, string $locale, CmsRoute $route, ViewRendererInterface $views): ?ResponseInterface;
+    public function handle(
+        int $entityId,
+        PublicLocaleResolution $resolution,
+        CmsRoute $route,
+        ViewRendererInterface $views,
+    ): ?ResponseInterface;
 }
