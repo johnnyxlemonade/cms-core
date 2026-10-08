@@ -16,6 +16,7 @@ use Lemonade\Cms\Routing\Locale\PublicLocaleResolver;
 use Lemonade\Cms\Routing\Locale\PublicLocaleSnapshot;
 use Lemonade\Cms\Routing\Module\PublicModuleRoutePrefixRepositoryInterface;
 use Lemonade\Cms\Routing\Module\PublicModuleStateResolverInterface;
+use Lemonade\Framework\Container\Container;
 use Lemonade\Framework\Http\Exception\NotFoundHttpException;
 use Lemonade\Framework\View\ViewRendererInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -45,7 +46,7 @@ final class PublicCmsRouteResolverTest extends TestCase
 
     public function testExplicitCsPrefixRedirectKeepsTheQueryString(): void
     {
-        $response = $this->resolver('/cs/aktuality/test')->resolve('page=2&utm_source=mail');
+        $response = $this->resolver('/cs/aktuality/test?page=2&utm_source=mail')->resolve();
 
         self::assertSame(301, $response->getStatusCode());
         self::assertSame('/aktuality/test?page=2&utm_source=mail', $response->getHeaderLine('Location'));
@@ -156,6 +157,8 @@ final class PublicCmsRouteResolverTest extends TestCase
             new PublicCmsCollectionHandlerRegistry(),
             new Psr17Factory(),
             new FakeViews(),
+            new Container(),
+            new ServerRequest('GET', $path),
         );
     }
 }

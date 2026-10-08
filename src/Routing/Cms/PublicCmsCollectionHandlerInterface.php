@@ -8,6 +8,7 @@ use Lemonade\Cms\Routing\Locale\PublicLocaleResolution;
 
 use Lemonade\Framework\View\ViewRendererInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Obsluhuje verejny seznam obsahu modulu na jeho lokalizovanem prefixu
@@ -21,5 +22,6 @@ interface PublicCmsCollectionHandlerInterface
         PublicLocaleResolution $resolution,
         string $prefix,
         ViewRendererInterface $views,
+        ServerRequestInterface $request,
     ): ?ResponseInterface;
 }

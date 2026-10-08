@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Lemonade\Cms\Routing\Cms;
 
 use Closure;
+use Lemonade\Framework\Container\ContainerInterface;
 
 /**
  * Drzi handlery, ktere moduly prispely pro verejne collection routy
  */
 final class PublicCmsCollectionHandlerRegistry
 {
-    /** @var array<string, PublicCmsCollectionHandlerInterface|Closure():PublicCmsCollectionHandlerInterface> */
+    /** @var array<string, PublicCmsCollectionHandlerInterface|Closure(ContainerInterface):PublicCmsCollectionHandlerInterface> */
     private array $handlers = [];
 
     /**
@@ -25,7 +26,7 @@ final class PublicCmsCollectionHandlerRegistry
     /**
      * Registruje lazy factory collection handleru optional CMS modulu
      *
-     * @param Closure():PublicCmsCollectionHandlerInterface $handler
+     * @param Closure(ContainerInterface):PublicCmsCollectionHandlerInterface $handler
      */
     public function registerFactory(string $moduleCode, Closure $handler): void
     {
@@ -35,12 +36,11 @@ final class PublicCmsCollectionHandlerRegistry
     /**
      * Vrati collection handler prispely pro dany modul
      */
-    public function handlerFor(string $moduleCode): ?PublicCmsCollectionHandlerInterface
+    public function handlerFor(string $moduleCode, ContainerInterface $container): ?PublicCmsCollectionHandlerInterface
     {
         $handler = $this->handlers[$moduleCode] ?? null;
         if ($handler instanceof Closure) {
-            $handler = $handler();
-            $this->handlers[$moduleCode] = $handler;
+            return $handler($container);
         }
 
         return $handler;

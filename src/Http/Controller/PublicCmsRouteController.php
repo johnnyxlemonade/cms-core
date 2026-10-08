@@ -27,8 +27,6 @@ final class PublicCmsRouteController
     {
         unset($path);
 
-        return $this->resolver->resolve(
-            $request->getUri()->getQuery(),
-        );
+        return $this->resolver->resolve();
     }
 }

@@ -8,10 +8,12 @@ use Lemonade\Cms\Routing\Locale\PublicLocaleResolution;
 use Lemonade\Cms\Routing\Module\PublicModuleRoutePrefixRepositoryInterface;
 use Lemonade\Cms\Routing\Module\PublicModuleStateResolverInterface;
 
+use Lemonade\Framework\Container\ContainerInterface;
 use Lemonade\Framework\Http\Exception\NotFoundHttpException;
 use Lemonade\Framework\View\ViewRendererInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Preklada verejnou CMS cestu na handler aktivniho modulu
@@ -30,16 +32,19 @@ final class PublicCmsRouteResolver
         private readonly PublicCmsCollectionHandlerRegistry $collections,
         private readonly ResponseFactoryInterface $responses,
         private readonly ViewRendererInterface $views,
+        private readonly ContainerInterface $container,
+        private readonly ServerRequestInterface $request,
     ) {}
 
     /**
      * Vrati redirect, odpoved handleru nebo not found pro verejnou cestu
      */
-    public function resolve(string $queryString = ''): ResponseInterface
+    public function resolve(): ResponseInterface
     {
         $locale = $this->locale;
         $redirectTo = $locale->redirectTo();
         if ($redirectTo !== null) {
+            $queryString = $this->request->getUri()->getQuery();
             $location = $queryString === '' ? $redirectTo : $redirectTo . '?' . $queryString;
 
             return $this->responses->createResponse(301)->withHeader('Location', $location);
@@ -86,9 +91,9 @@ final class PublicCmsRouteResolver
             return null;
         }
 
-        $handler = $this->collections->handlerFor($moduleCode);
+        $handler = $this->collections->handlerFor($moduleCode, $this->container);
 
-        return $handler?->handleCollection($resolution, $path, $this->views);
+        return $handler?->handleCollection($resolution, $path, $this->views, $this->request);
     }
 
     /**
