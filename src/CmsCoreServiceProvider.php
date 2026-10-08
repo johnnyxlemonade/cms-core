@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Lemonade\Cms;
 
+use Lemonade\Cms\Http\Controller\PublicCmsAttachmentDownloadController;
 use Lemonade\Cms\Http\Controller\PublicCmsRouteController;
 use Lemonade\Cms\Migrations\CreateCoreCmsRoutes;
 use Lemonade\Cms\Routing\Cms\CmsRouteCandidateResolver;
 use Lemonade\Cms\Routing\Cms\CmsRouteRepository;
 use Lemonade\Cms\Routing\Cms\CmsRouteRepositoryInterface;
 use Lemonade\Cms\Routing\Cms\CmsRouteReservationService;
+use Lemonade\Cms\Routing\Cms\PublicCmsAttachmentDownloadHandlerRegistry;
 use Lemonade\Cms\Routing\Cms\PublicCmsCollectionHandlerRegistry;
 use Lemonade\Cms\Routing\Cms\PublicCmsRouteHandlerRegistry;
 use Lemonade\Cms\Routing\Cms\PublicCmsRouteRegistrar;
@@ -53,9 +55,11 @@ final class CmsCoreServiceProvider implements ServiceProviderInterface
         }
         $container->singleton(PublicCmsUrlBuilder::class, PublicCmsUrlBuilder::class);
         $container->singleton(PublicCmsRouteHandlerRegistry::class, PublicCmsRouteHandlerRegistry::class);
+        $container->singleton(PublicCmsAttachmentDownloadHandlerRegistry::class, PublicCmsAttachmentDownloadHandlerRegistry::class);
         $container->singleton(PublicCmsCollectionHandlerRegistry::class, PublicCmsCollectionHandlerRegistry::class);
         $container->scoped(PublicCmsRouteResolver::class, PublicCmsRouteResolver::class);
         $container->scoped(PublicCmsRouteController::class, PublicCmsRouteController::class);
+        $container->scoped(PublicCmsAttachmentDownloadController::class, PublicCmsAttachmentDownloadController::class);
         $container->singletonTagged(PublicCmsRouteRegistrar::class, PublicCmsRouteRegistrar::class, RouteRegistrarInterface::class);
         if ($container->isBound(MigrationRegistry::class)) {
             $container->get(MigrationRegistry::class)->register(CreateCoreCmsRoutes::class);
