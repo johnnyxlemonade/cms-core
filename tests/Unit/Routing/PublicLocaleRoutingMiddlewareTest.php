@@ -115,6 +115,39 @@ final class PublicLocaleRoutingMiddlewareTest extends TestCase
     }
 
     /**
+     * Overuje, ze technicke API cesty nemaji locale dispatch variantu
+     */
+    public function testApiPathBypassesThePublicLocaleRegistry(): void
+    {
+        $registry = new PublicLocaleTestRegistry();
+        $request = new ServerRequest('GET', '/api/file/14/download');
+        $handler = new CapturingLocaleRequestHandler();
+
+        $this->middleware($registry, $request)->process($request, $handler);
+
+        self::assertSame(0, $registry->snapshotReads());
+        self::assertSame($request, $handler->request);
+    }
+
+    /**
+     * Overuje, ze locale prefix nepresmeruje ani nezpristupni technicke API cesty
+     */
+    public function testLocalePrefixedApiPathReturnsNotFound(): void
+    {
+        foreach (['/en/api/file/14/download', '/cs/api/file/14/download'] as $path) {
+            $registry = new PublicLocaleTestRegistry();
+            $request = new ServerRequest('GET', $path);
+            $handler = new CapturingLocaleRequestHandler();
+
+            $response = $this->middleware($registry, $request)->process($request, $handler);
+
+            self::assertSame(404, $response->getStatusCode());
+            self::assertSame(1, $registry->snapshotReads());
+            self::assertNull($handler->request);
+        }
+    }
+
+    /**
      * Vytvari middleware s request-scoped lazy resolverem
      */
     private function middleware(PublicLocaleTestRegistry $registry, ServerRequestInterface $request): PublicLocaleRoutingMiddleware

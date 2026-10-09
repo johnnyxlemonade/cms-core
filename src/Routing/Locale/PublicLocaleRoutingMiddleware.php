@@ -13,7 +13,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**
- * Uplatni public locale resolution pred matchingem vsech verejnych rout
+ * Uplatni public locale resolution pred matchingem verejnych content rout
  */
 final readonly class PublicLocaleRoutingMiddleware implements MiddlewareInterface
 {
@@ -32,11 +32,17 @@ final readonly class PublicLocaleRoutingMiddleware implements MiddlewareInterfac
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        if ($request->getAttribute(self::BYPASS_ATTRIBUTE) === true) {
+        if (
+            $request->getAttribute(self::BYPASS_ATTRIBUTE) === true
+            || str_starts_with($request->getUri()->getPath(), '/api/')
+        ) {
             return $handler->handle($request);
         }
 
         $resolution = $this->resolver->resolve();
+        if ($this->isTechnicalApiPath($resolution->path()) || $this->isTechnicalApiPath($resolution->redirectTo())) {
+            return $this->responses->createResponse(404);
+        }
         $redirectTo = $resolution->redirectTo();
         if ($redirectTo !== null) {
             $query = $request->getUri()->getQuery();
@@ -58,5 +64,13 @@ final readonly class PublicLocaleRoutingMiddleware implements MiddlewareInterfac
             RouteRequestAttributes::DISPATCH_PATH,
             '/' . ltrim($path, '/'),
         ));
+    }
+
+    /**
+     * Rozlisuje technicke API cesty od locale-aware verejneho obsahu
+     */
+    private function isTechnicalApiPath(?string $path): bool
+    {
+        return $path !== null && str_starts_with('/' . ltrim($path, '/'), '/api/');
     }
 }

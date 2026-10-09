@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Lemonade\Cms\Routing\Cms;
 
-use Lemonade\Cms\Routing\Locale\PublicLocaleResolution;
 use Psr\Http\Message\ResponseInterface;
 
 /**
@@ -15,5 +14,5 @@ interface PublicCmsAttachmentDownloadHandlerInterface
     /**
      * Odesle attachment nebo vrati bezpecnou verejnou 404 odpoved
      */
-    public function downloadAttachment(int $fileId, PublicLocaleResolution $locale): ResponseInterface;
+    public function downloadAttachment(int $fileId): ResponseInterface;
 }

@@ -37,8 +37,8 @@ final class PublicCmsRouteRegistrar implements RouteRegistrarInterface
     public function registerRoutes(Router $router): void
     {
         $router->getNamed(
-            name: 'frontend.file.download',
-            path: '/files/{file}/download',
+            name: 'api.file.download',
+            path: '/api/file/{file}/download',
             action: ControllerAction::for(
                 controllerClass: PublicCmsAttachmentDownloadController::class,
                 method: 'download',
