@@ -31,7 +31,7 @@ final class CmsCoreServiceProviderTest extends TestCase
         (new CmsCoreServiceProvider())->register($container);
 
         self::assertTrue($container->isBound(CmsRouteRepositoryInterface::class));
-        self::assertTrue($container->isBound(CmsRouteReservationService::class));
+        self::assertFalse($container->isBound(CmsRouteReservationService::class));
         self::assertTrue($container->isBound(PublicLocaleResolver::class));
         self::assertTrue($container->isBound(PublicLocaleResolution::class));
         self::assertTrue($container->isBound(PublicLocaleRoutingMiddleware::class));
