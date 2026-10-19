@@ -26,7 +26,7 @@ final class PublicCmsRouteRegistrarTest extends TestCase
         self::assertSame('Example\\Controllers\\AdminController', $router->match(new ServerRequest('GET', '/admin/news'))->controller());
         self::assertSame('Lemonade\\Cms\\Http\\Controller\\PublicCmsAttachmentDownloadController', $router->match(new ServerRequest('GET', '/api/file/14/download'))->controller());
         self::assertSame('Lemonade\\Cms\\Http\\Controller\\PublicCmsRouteController', $router->match(new ServerRequest('GET', '/files/14/download'))->controller());
-        self::assertSame('Lemonade\\Cms\\Http\\Controller\\PublicCmsRouteController', $router->match(new ServerRequest('GET', '/aktuality/test'))->controller());
+        self::assertSame('Lemonade\\Cms\\Http\\Controller\\PublicCmsRouteController', $router->match(new ServerRequest('GET', '/test'))->controller());
         self::assertSame(10000, (new PublicCmsRouteRegistrar())->priority());
     }
 }

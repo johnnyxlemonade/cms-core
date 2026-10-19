@@ -10,7 +10,6 @@ use Lemonade\Cms\Migrations\CreateCoreCmsRoutes;
 use Lemonade\Cms\Routing\Cms\CmsRouteRepository;
 use Lemonade\Cms\Routing\Cms\CmsRouteRepositoryInterface;
 use Lemonade\Cms\Routing\Cms\PublicCmsAttachmentDownloadHandlerRegistry;
-use Lemonade\Cms\Routing\Cms\PublicCmsCollectionHandlerRegistry;
 use Lemonade\Cms\Routing\Cms\PublicCmsRouteHandlerRegistry;
 use Lemonade\Cms\Routing\Cms\PublicCmsRouteRegistrar;
 use Lemonade\Cms\Routing\Cms\PublicCmsRouteResolver;
@@ -44,7 +43,6 @@ final class CmsCoreServiceProvider implements ServiceProviderInterface, Bootable
         $container->scoped(PublicLocaleRoutingMiddleware::class, PublicLocaleRoutingMiddleware::class);
         $container->singleton(PublicCmsRouteHandlerRegistry::class, PublicCmsRouteHandlerRegistry::class);
         $container->singleton(PublicCmsAttachmentDownloadHandlerRegistry::class, PublicCmsAttachmentDownloadHandlerRegistry::class);
-        $container->singleton(PublicCmsCollectionHandlerRegistry::class, PublicCmsCollectionHandlerRegistry::class);
         $container->scoped(PublicCmsRouteResolver::class, PublicCmsRouteResolver::class);
         $container->scoped(PublicCmsRouteController::class, PublicCmsRouteController::class);
         $container->scoped(PublicCmsAttachmentDownloadController::class, PublicCmsAttachmentDownloadController::class);

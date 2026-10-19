@@ -37,16 +37,16 @@ final class CmsRouteReservationService
         string $moduleCode,
         int $entityId,
         string $locale,
-        string $prefix,
         string $baseSlug,
+        int $maximumSlugLength = 255,
     ): CmsRouteReservation {
         for ($attempt = 1; $attempt <= self::MAXIMUM_RESERVATION_ATTEMPTS; $attempt++) {
             $reservation = $this->candidates->resolve(
                 moduleCode: $moduleCode,
                 entityId: $entityId,
-                prefix: $prefix,
                 baseSlug: $baseSlug,
-                routes: $this->routes->routesForPrefix($locale, $prefix),
+                routes: $this->routes->routesForLocale($locale),
+                maximumSlugLength: $maximumSlugLength,
             );
             try {
                 $this->routes->reserve(

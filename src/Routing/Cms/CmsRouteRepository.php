@@ -9,12 +9,12 @@ use Lemonade\Framework\Database\Database;
 /**
  * Vyhledava kanonicke CMS routy pro verejny transport modulu
  */
-final class CmsRouteRepository implements CmsRouteRepositoryInterface
+final readonly class CmsRouteRepository implements CmsRouteRepositoryInterface
 {
     /**
      * Nastavuje databazove uloziste kanonickych cest
      */
-    public function __construct(private readonly Database $database) {}
+    public function __construct(private Database $database) {}
 
     /**
      * Najde kanonickou cestu v pozadovane lokalizaci
@@ -53,16 +53,16 @@ final class CmsRouteRepository implements CmsRouteRepositoryInterface
     }
 
     /**
-     * Nacte routy jednoho locale a module prefixu vcetne rezervovanych smazanych cest
+     * Nacte vsechny routy locale vcetne rezervovanych smazanych cest
      *
      * @return list<CmsRoute>
      */
-    public function routesForPrefix(string $locale, string $prefix): array
+    public function routesForLocale(string $locale): array
     {
         $routes = [];
         foreach ($this->database->select(
-            'SELECT id, module_code, entity_id, locale, path FROM cms_route WHERE locale = ? AND path LIKE ?',
-            [$locale, $prefix . '/%'],
+            'SELECT id, module_code, entity_id, locale, path FROM cms_route WHERE locale = ?',
+            [$locale],
         ) as $row) {
             $route = $this->route($row);
             if ($route !== null) {

@@ -5,10 +5,7 @@ declare(strict_types=1);
 namespace Lemonade\Cms\Routing\Cms;
 
 use Lemonade\Cms\Routing\Locale\PublicLocaleResolution;
-use Lemonade\Cms\Routing\Module\PublicModuleRoutePrefixRepositoryInterface;
 use Lemonade\Cms\Routing\Module\PublicModuleStateResolverInterface;
-
-use Lemonade\Framework\Container\ContainerInterface;
 use Lemonade\Framework\Http\Exception\NotFoundHttpException;
 use Lemonade\Framework\View\ViewRendererInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
@@ -18,22 +15,19 @@ use Psr\Http\Message\ServerRequestInterface;
 /**
  * Preklada verejnou CMS cestu na handler aktivniho modulu
  */
-final class PublicCmsRouteResolver
+final readonly class PublicCmsRouteResolver
 {
     /**
      * Nastavuje locale, canonical routy a prispene handlery modulu
      */
     public function __construct(
-        private readonly PublicLocaleResolution $locale,
-        private readonly CmsRouteRepositoryInterface $routes,
-        private readonly PublicModuleStateResolverInterface $modules,
-        private readonly PublicModuleRoutePrefixRepositoryInterface $prefixes,
-        private readonly PublicCmsRouteHandlerRegistry $handlers,
-        private readonly PublicCmsCollectionHandlerRegistry $collections,
-        private readonly ResponseFactoryInterface $responses,
-        private readonly ViewRendererInterface $views,
-        private readonly ContainerInterface $container,
-        private readonly ServerRequestInterface $request,
+        private PublicLocaleResolution             $locale,
+        private CmsRouteRepositoryInterface        $routes,
+        private PublicModuleStateResolverInterface $modules,
+        private PublicCmsRouteHandlerRegistry      $handlers,
+        private ResponseFactoryInterface           $responses,
+        private ViewRendererInterface              $views,
+        private ServerRequestInterface             $request,
     ) {}
 
     /**
@@ -55,18 +49,8 @@ final class PublicCmsRouteResolver
             return $this->notFound();
         }
 
-        $collectionResponse = $this->resolveCollection($locale, $routeLocale, $routePath);
-        if ($collectionResponse !== null) {
-            return $collectionResponse;
-        }
-
         $route = $this->routes->find($routeLocale, $routePath);
         if ($route === null || !$this->modules->isDiscoveredInstalledAndEnabled($route->moduleCode())) {
-            return $this->notFound();
-        }
-
-        $prefix = $this->prefixes->prefixFor($route->moduleCode(), $route->locale());
-        if ($prefix === null || $this->firstSegment($route->path()) !== $prefix) {
             return $this->notFound();
         }
 
@@ -76,32 +60,6 @@ final class PublicCmsRouteResolver
         }
 
         return $handler->handle($route->entityId(), $locale, $route, $this->views) ?? $this->notFound();
-    }
-
-    /**
-     * Preda cestu shodnou s runtime prefixem collection handleru modulu
-     */
-    private function resolveCollection(PublicLocaleResolution $resolution, string $locale, string $path): ?ResponseInterface
-    {
-        if (str_contains($path, '/')) {
-            return null;
-        }
-        $moduleCode = $this->prefixes->moduleFor($locale, $path);
-        if ($moduleCode === null || !$this->modules->isDiscoveredInstalledAndEnabled($moduleCode)) {
-            return null;
-        }
-
-        $handler = $this->collections->handlerFor($moduleCode, $this->container);
-
-        return $handler?->handleCollection($resolution, $path, $this->views, $this->request);
-    }
-
-    /**
-     * Vrati prvni segment kanonicke cesty modulu
-     */
-    private function firstSegment(string $path): string
-    {
-        return explode('/', $path, 2)[0];
     }
 
     /**

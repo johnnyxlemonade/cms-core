@@ -12,8 +12,8 @@ module-provided public detail and collection handlers.
 
 The package is runtime-only. It does not own Admin UI, permissions, DataGrid,
 AdminEditor, public HTML, content publication policy, or file storage. The host
-supplies locale, module-state and route-prefix runtime ports. A host or content
-module registers the handler that authoritatively renders a public CMS response.
+supplies locale and module-state runtime ports. A host or content module registers
+the handler that authoritatively renders a public CMS response.
 
 ## Installation
 
@@ -22,9 +22,8 @@ The package requires PHP `>=8.3 <8.6` and `johnnyxlemonade/framework`.
     composer require johnnyxlemonade/cms-core:dev-main
 
 Register `Lemonade\Cms\CmsCoreServiceProvider` in the host application and bind
-implementations of `PublicLocaleRegistryInterface`,
-`PublicModuleStateResolverInterface`, and
-`PublicModuleRoutePrefixRepositoryInterface`.
+implementations of `PublicLocaleRegistryInterface` and
+`PublicModuleStateResolverInterface`.
 
 ## Public CMS routing
 
@@ -35,9 +34,8 @@ canonical address; it is not proof that the target content remains public. The
 module handler remains authoritative for publication state, soft deletion,
 visibility windows, and locale-specific content availability.
 
-Detail handlers implement `PublicCmsRouteHandlerInterface`. Collection handlers
-implement `PublicCmsCollectionHandlerInterface` and are resolved through an
-active request container; handlers must not retain request or locale state.
+Detail handlers implement `PublicCmsRouteHandlerInterface`. Collection pages are
+ordinary host application routes and remain outside CMS Core.
 
 ## Package boundaries
 

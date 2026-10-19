@@ -14,19 +14,23 @@ use PHPUnit\Framework\TestCase;
 final class CmsRouteCandidateResolverTest extends TestCase
 {
     /**
-     * Vybere base slug a dalsi cislovane suffixy od -2 podle obsazenych rout
+     * Vybere base slug a dalsi cislovane suffixy od -1 podle obsazenych rout
      */
     public function testResolvesFirstAvailableSuffix(): void
     {
         $resolver = new CmsRouteCandidateResolver();
 
-        self::assertSame('test', $resolver->resolve('cms.news', 10, 'aktuality', 'test', [])->slug());
-        self::assertSame('test-2', $resolver->resolve('cms.news', 11, 'aktuality', 'test', [
-            new CmsRoute(1, 'cms.news', 10, 'cs', 'aktuality/test'),
+        self::assertSame('test', $resolver->resolve('cms.news', 10, 'test', [])->slug());
+        self::assertSame('test-1', $resolver->resolve('cms.news', 11, 'test', [
+            new CmsRoute(1, 'cms.news', 10, 'cs', 'test'),
         ])->slug());
-        self::assertSame('test-3', $resolver->resolve('cms.news', 12, 'aktuality', 'test', [
-            new CmsRoute(1, 'cms.news', 10, 'cs', 'aktuality/test'),
-            new CmsRoute(2, 'cms.news', 11, 'cs', 'aktuality/test-2'),
+        self::assertSame('test-1', $resolver->resolve('cms.news', 12, 'test', [
+            new CmsRoute(1, 'cms.news', 10, 'cs', 'test'),
+            new CmsRoute(2, 'cms.news', 11, 'cs', 'test-2'),
+        ])->slug());
+        self::assertSame('test-2', $resolver->resolve('cms.news', 12, 'test', [
+            new CmsRoute(1, 'cms.news', 10, 'cs', 'test'),
+            new CmsRoute(2, 'cms.news', 11, 'cs', 'test-1'),
         ])->slug());
     }
 
@@ -37,14 +41,14 @@ final class CmsRouteCandidateResolverTest extends TestCase
     {
         $resolver = new CmsRouteCandidateResolver();
 
-        $reservation = $resolver->resolve('cms.news', 10, 'aktuality', 'test', [
-            new CmsRoute(1, 'cms.news', 9, 'cs', 'aktuality/test'),
-            new CmsRoute(2, 'cms.page', 20, 'cs', 'aktuality/test-2'),
-            new CmsRoute(3, 'cms.news', 10, 'cs', 'aktuality/test-3'),
+        $reservation = $resolver->resolve('cms.news', 10, 'test', [
+            new CmsRoute(1, 'cms.news', 9, 'cs', 'test'),
+            new CmsRoute(2, 'cms.page', 20, 'cs', 'test-1'),
+            new CmsRoute(3, 'cms.news', 10, 'cs', 'test-2'),
         ]);
 
-        self::assertSame('test-3', $reservation->slug());
-        self::assertSame('aktuality/test-3', $reservation->path());
+        self::assertSame('test-2', $reservation->slug());
+        self::assertSame('test-2', $reservation->path());
     }
 
     /**
@@ -53,13 +57,13 @@ final class CmsRouteCandidateResolverTest extends TestCase
     public function testReservesSpaceForSuffixWithinMaximumSlugLength(): void
     {
         $resolver = new CmsRouteCandidateResolver();
-        $baseSlug = str_repeat('a', 255);
+        $baseSlug = str_repeat('a', 180);
 
-        $reservation = $resolver->resolve('cms.news', 11, 'aktuality', $baseSlug, [
-            new CmsRoute(1, 'cms.news', 10, 'cs', 'aktuality/' . $baseSlug),
-        ]);
+        $reservation = $resolver->resolve('cms.news', 11, $baseSlug, [
+            new CmsRoute(1, 'cms.news', 10, 'cs', $baseSlug),
+        ], maximumSlugLength: 180);
 
-        self::assertSame(255, strlen($reservation->slug()));
-        self::assertSame(str_repeat('a', 253) . '-2', $reservation->slug());
+        self::assertSame(180, strlen($reservation->slug()));
+        self::assertSame(str_repeat('a', 178) . '-1', $reservation->slug());
     }
 }
