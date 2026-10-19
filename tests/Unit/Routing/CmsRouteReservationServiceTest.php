@@ -34,6 +34,7 @@ final class CmsRouteReservationServiceTest extends TestCase
         $service = $this->service($connection);
 
         self::assertTrue($service->hasReservation('cms.news', 7, 'cs'));
+        self::assertSame('stable-path', $service->reservationPath('cms.news', 7, 'cs'));
         self::assertSame([], $connection->attemptedPaths);
     }
 
@@ -91,6 +92,23 @@ final class CmsRouteReservationServiceTest extends TestCase
         $this->expectExceptionMessage('cms.route.path_reserved');
 
         $service->reserveExplicit('cms.page', 7, 'cs', '/assets/images');
+    }
+
+    /**
+     * Explicitni kolize se neprepisuje suffixem a neprovede zadny zapis
+     */
+    public function testExplicitReservationRejectsOccupiedPathWithoutSuffix(): void
+    {
+        $connection = new ReservationConnection(0, occupiedPaths: ['kontakt']);
+        $service = $this->service($connection);
+
+        try {
+            $service->reserveExplicit('cms.page', 7, 'cs', 'kontakt');
+            self::fail('Expected occupied explicit route.');
+        } catch (CmsRouteValidationException $exception) {
+            self::assertSame('cms.route.path_occupied', $exception->getMessage());
+            self::assertSame([], $connection->attemptedPaths);
+        }
     }
 
     /**
@@ -241,12 +259,11 @@ final class ReservationConnection implements ConnectionInterface
     /** @var list<string> */
     public array $attemptedPaths = [];
 
-    /** @var list<string> */
-    private array $occupiedPaths = [];
-
+    /** @param list<string> $occupiedPaths */
     public function __construct(
         private int $failuresRemaining,
         private readonly ?string $targetPath = null,
+        private array $occupiedPaths = [],
     ) {}
 
     public function select(string $sql, array $bindings = []): array

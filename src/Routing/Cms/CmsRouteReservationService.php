@@ -32,6 +32,14 @@ final class CmsRouteReservationService
     }
 
     /**
+     * Vrati aktualni canonical cestu targetu pro no-op rozhodnuti
+     */
+    public function reservationPath(string $moduleCode, int $entityId, string $locale): ?string
+    {
+        return $this->routes->findForTarget($moduleCode, $entityId, $locale)?->path();
+    }
+
+    /**
      * Vybere volny candidate a target-safe jej rezervuje s omezenym retry pri soubehu
      */
     public function reserveAutomatic(
