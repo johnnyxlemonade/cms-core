@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Lemonade\Cms\Routing\Cms;
 
 use Closure;
+use Lemonade\Framework\Container\ContainerInterface;
 
 /**
  * Drzi handlery, ktere moduly prispely pro verejne CMS routy
  */
 final class PublicCmsRouteHandlerRegistry
 {
-    /** @var array<string, PublicCmsRouteHandlerInterface|Closure():PublicCmsRouteHandlerInterface> */
+    /** @var array<string, PublicCmsRouteHandlerInterface|Closure(ContainerInterface):PublicCmsRouteHandlerInterface> */
     private array $handlers = [];
 
     /**
@@ -25,7 +26,7 @@ final class PublicCmsRouteHandlerRegistry
     /**
      * Registruje lazy factory detail handleru optional CMS modulu
      *
-     * @param Closure():PublicCmsRouteHandlerInterface $handler
+     * @param Closure(ContainerInterface):PublicCmsRouteHandlerInterface $handler
      */
     public function registerFactory(string $moduleCode, Closure $handler): void
     {
@@ -35,12 +36,11 @@ final class PublicCmsRouteHandlerRegistry
     /**
      * Vrati handler prispely pro dany modul
      */
-    public function handlerFor(string $moduleCode): ?PublicCmsRouteHandlerInterface
+    public function handlerFor(string $moduleCode, ContainerInterface $container): ?PublicCmsRouteHandlerInterface
     {
         $handler = $this->handlers[$moduleCode] ?? null;
         if ($handler instanceof Closure) {
-            $handler = $handler();
-            $this->handlers[$moduleCode] = $handler;
+            return $handler($container);
         }
 
         return $handler;

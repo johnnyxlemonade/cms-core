@@ -6,6 +6,7 @@ namespace Lemonade\Cms\Routing\Cms;
 
 use Lemonade\Cms\Routing\Locale\PublicLocaleResolution;
 use Lemonade\Cms\Routing\Module\PublicModuleStateResolverInterface;
+use Lemonade\Framework\Container\ContainerInterface;
 use Lemonade\Framework\Http\Exception\NotFoundHttpException;
 use Lemonade\Framework\View\ViewRendererInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
@@ -28,6 +29,7 @@ final readonly class PublicCmsRouteResolver
         private ResponseFactoryInterface           $responses,
         private ViewRendererInterface              $views,
         private ServerRequestInterface             $request,
+        private ContainerInterface                 $container,
     ) {}
 
     /**
@@ -54,7 +56,7 @@ final readonly class PublicCmsRouteResolver
             return $this->notFound();
         }
 
-        $handler = $this->handlers->handlerFor($route->moduleCode());
+        $handler = $this->handlers->handlerFor($route->moduleCode(), $this->container);
         if ($handler === null) {
             return $this->notFound();
         }

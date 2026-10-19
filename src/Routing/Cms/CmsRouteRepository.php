@@ -95,6 +95,29 @@ final readonly class CmsRouteRepository implements CmsRouteRepositoryInterface
     }
 
     /**
+     * Provede callback ve sdilene databazove transakci
+     *
+     * @template T
+     * @param callable():T $callback
+     * @return T
+     */
+    public function transaction(callable $callback): mixed
+    {
+        return $this->database->transaction(static fn(): mixed => $callback());
+    }
+
+    /**
+     * Zmeni cestu existujiciho targetu bez zmeny jeho lifecycle stavu
+     */
+    public function updatePath(string $moduleCode, int $entityId, string $locale, string $path, string $now): void
+    {
+        $this->database->statement(
+            'UPDATE cms_route SET path = ?, updated_at = ? WHERE module_code = ? AND entity_id = ? AND locale = ?',
+            [$path, $now, $moduleCode, $entityId, $locale],
+        );
+    }
+
+    /**
      * Skryje routy smazane entity bez uvolneni jejich URL adres
      */
     public function softDeleteForTarget(string $moduleCode, int $entityId, string $now): void

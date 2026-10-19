@@ -24,6 +24,7 @@ final class CmsRouteCandidateResolver
         string $baseSlug,
         array $routes,
         int $maximumSlugLength = self::MAXIMUM_SLUG_LENGTH,
+        ?callable $isReserved = null,
     ): CmsRouteReservation {
         $occupiedPaths = [];
         foreach ($routes as $route) {
@@ -32,13 +33,15 @@ final class CmsRouteCandidateResolver
             }
             $occupiedPaths[$route->path()] = true;
         }
-        for ($suffix = 0; ; $suffix++) {
+        for ($suffix = 0; $suffix < 10000; $suffix++) {
             $slug = $this->candidate($baseSlug, $suffix, $maximumSlugLength);
             $path = $slug;
-            if (!isset($occupiedPaths[$path])) {
+            if (!isset($occupiedPaths[$path]) && !($isReserved !== null && $isReserved($path))) {
                 return new CmsRouteReservation($slug, $path);
             }
         }
+
+        throw new RuntimeException('CMS route candidate limit was reached.');
     }
 
     /**

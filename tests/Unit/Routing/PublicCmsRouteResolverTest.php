@@ -14,6 +14,9 @@ use Lemonade\Cms\Routing\Locale\PublicLocaleResolution;
 use Lemonade\Cms\Routing\Locale\PublicLocaleResolver;
 use Lemonade\Cms\Routing\Locale\PublicLocaleSnapshot;
 use Lemonade\Cms\Routing\Module\PublicModuleStateResolverInterface;
+use Lemonade\Framework\Container\Container;
+use Lemonade\Framework\Container\ContainerInterface;
+use Lemonade\Framework\Container\ScopeKind;
 use Lemonade\Framework\Http\Exception\NotFoundHttpException;
 use Lemonade\Framework\View\ViewRendererInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -102,6 +105,34 @@ final class PublicCmsRouteResolverTest extends TestCase
         self::assertSame([42, 'cs', 'cs', 'x'], $handler->received);
     }
 
+    /**
+     * Overuje, ze lazy handler zustava request scoped a registry jej necachuje
+     */
+    public function testHandlerFactoryUsesTheActiveRequestScope(): void
+    {
+        $container = new Container();
+        $container->scoped(ScopedFakeHandler::class, ScopedFakeHandler::class);
+        $container->freeze();
+        $handlers = new PublicCmsRouteHandlerRegistry();
+        $handlers->registerFactory(
+            'news',
+            static fn(ContainerInterface $container): ScopedFakeHandler => $container->get(ScopedFakeHandler::class),
+        );
+        $firstScope = $container->beginScope(ScopeKind::Request);
+        $secondScope = $container->beginScope(ScopeKind::Request);
+
+        $firstHandler = $handlers->handlerFor('news', $firstScope);
+        $sameRequestHandler = $handlers->handlerFor('news', $firstScope);
+        $secondHandler = $handlers->handlerFor('news', $secondScope);
+
+        self::assertInstanceOf(ScopedFakeHandler::class, $firstHandler);
+        self::assertSame($firstHandler, $sameRequestHandler);
+        self::assertNotSame($firstHandler, $secondHandler);
+
+        $firstScope->close();
+        $secondScope->close();
+    }
+
     public function testCanonicalUrlBuilderOmitsOnlyTheDefaultLocale(): void
     {
         $builder = new \Lemonade\Cms\Routing\Cms\PublicCmsUrlBuilder();
@@ -142,6 +173,7 @@ final class PublicCmsRouteResolverTest extends TestCase
             new Psr17Factory(),
             new FakeViews(),
             new ServerRequest('GET', $path),
+            new Container(),
         );
     }
 }
@@ -205,6 +237,18 @@ final class FakeHandler implements PublicCmsRouteHandlerInterface
     ): ResponseInterface {
         $this->received = [$entityId, $resolution->defaultLocale(), (string) $resolution->locale(), $route->path()];
 
+        return (new Psr17Factory())->createResponse(200);
+    }
+}
+
+final class ScopedFakeHandler implements PublicCmsRouteHandlerInterface
+{
+    public function handle(
+        int $entityId,
+        PublicLocaleResolution $resolution,
+        CmsRoute $route,
+        ViewRendererInterface $views,
+    ): ResponseInterface {
         return (new Psr17Factory())->createResponse(200);
     }
 }
