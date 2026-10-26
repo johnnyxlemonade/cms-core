@@ -11,13 +11,13 @@ use Psr\Http\Message\ServerRequestInterface;
 /**
  * Predava verejnou CMS cestu package-neutralnimu resolveru modulu
  */
-final class PublicCmsRouteController
+final readonly class PublicCmsRouteController
 {
     /**
      * Nastavuje resolver verejnych CMS cest
      */
     public function __construct(
-        private readonly PublicCmsRouteResolver $resolver,
+        private PublicCmsRouteResolver $resolver,
     ) {}
 
     /**

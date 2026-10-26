@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Lemonade\Cms\Routing\Cms;
 
-use Lemonade\Cms\Http\Controller\PublicCmsAttachmentDownloadController;
 use Lemonade\Cms\Http\Controller\PublicCmsRouteController;
 use Lemonade\Framework\Routing\ControllerAction;
 use Lemonade\Framework\Routing\Router;
@@ -13,7 +12,7 @@ use Lemonade\Framework\Routing\RouteRegistrarInterface;
 /**
  * Registruje zachytnou verejnou CMS routu
  */
-final class PublicCmsRouteRegistrar implements RouteRegistrarInterface
+final readonly class PublicCmsRouteRegistrar implements RouteRegistrarInterface
 {
     /**
      * Vrati stabilni identifikator fallback registraru
@@ -36,14 +35,6 @@ final class PublicCmsRouteRegistrar implements RouteRegistrarInterface
      */
     public function registerRoutes(Router $router): void
     {
-        $router->getNamed(
-            name: 'api.file.download',
-            path: '/api/file/{file}/download',
-            action: ControllerAction::for(
-                controllerClass: PublicCmsAttachmentDownloadController::class,
-                method: 'download',
-            ),
-        );
         $router->getNamed(
             name: 'frontend.cms-route',
             path: '/{path:any}',

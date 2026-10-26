@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Lemonade\Cms\Tests\Unit\Routing;
 
+use Lemonade\Cms\Routing\Cms\PublicCmsApiEndpointProvider;
 use Lemonade\Cms\Routing\Cms\PublicCmsRouteRegistrar;
+use Lemonade\Framework\Api\Endpoint\ApiEndpointRegistrar;
+use Lemonade\Framework\Api\Endpoint\ApiEndpointRegistry;
 use Lemonade\Framework\Routing\ControllerAction;
 use Lemonade\Framework\Routing\Router;
 use Nyholm\Psr7\ServerRequest;
@@ -18,6 +21,9 @@ final class PublicCmsRouteRegistrarTest extends TestCase
         $router->getNamed('frontend.home', '/', ControllerAction::for('Example\\Controllers\\HomeController', 'index'));
         $router->getNamed('api.health', '/api/health', ControllerAction::for('Example\\Controllers\\HealthController', 'index'));
         $router->getNamed('admin.module', '/admin/{module}', ControllerAction::for('Example\\Controllers\\AdminController', 'index'));
+        $endpoints = new ApiEndpointRegistry();
+        (new PublicCmsApiEndpointProvider())->register($endpoints);
+        (new ApiEndpointRegistrar($router, $endpoints))->registerRoutes('/api');
 
         (new PublicCmsRouteRegistrar())->registerRoutes($router);
 

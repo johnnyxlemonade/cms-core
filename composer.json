@@ -5,7 +5,7 @@
   "license": "Apache-2.0",
   "require": {
     "php": ">=8.3 <8.6",
-    "johnnyxlemonade/framework": "dev-master"
+    "johnnyxlemonade/framework": "dev-main"
   },
   "autoload": {
     "psr-4": {
