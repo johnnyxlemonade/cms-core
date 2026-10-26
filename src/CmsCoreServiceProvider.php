@@ -11,7 +11,6 @@ use Lemonade\Cms\Routing\Cms\CmsRouteRepository;
 use Lemonade\Cms\Routing\Cms\CmsRouteRepositoryInterface;
 use Lemonade\Cms\Routing\Cms\PublicCmsAttachmentDownloadHandlerRegistry;
 use Lemonade\Cms\Routing\Cms\PublicCmsRouteHandlerRegistry;
-use Lemonade\Cms\Routing\Cms\PublicCmsRouteRegistrar;
 use Lemonade\Cms\Routing\Cms\PublicCmsRouteResolver;
 use Lemonade\Cms\Routing\Locale\PublicLocaleResolution;
 use Lemonade\Cms\Routing\Locale\PublicLocaleResolver;
@@ -22,7 +21,6 @@ use Lemonade\Framework\Core\BootableServiceProviderInterface;
 use Lemonade\Framework\Core\ServiceProviderInterface;
 use Lemonade\Framework\Database\Migration\MigrationRegistry;
 use Lemonade\Framework\Http\Middleware\MiddlewareStack;
-use Lemonade\Framework\Routing\RouteRegistrarInterface;
 
 /**
  * Registruje reusable CMS routing bez host adapteru
@@ -30,7 +28,7 @@ use Lemonade\Framework\Routing\RouteRegistrarInterface;
 final class CmsCoreServiceProvider implements ServiceProviderInterface, BootableServiceProviderInterface
 {
     /**
-     * Zapisuje CMS runtime, migraci a verejny fallback route registrar
+     * Zapisuje reusable CMS runtime a migraci bez aktivace host rout
      */
     public function register(ContainerBuilderInterface $container): void
     {
@@ -46,8 +44,6 @@ final class CmsCoreServiceProvider implements ServiceProviderInterface, Bootable
         $container->scoped(PublicCmsRouteResolver::class, PublicCmsRouteResolver::class);
         $container->scoped(PublicCmsRouteController::class, PublicCmsRouteController::class);
         $container->scoped(PublicCmsAttachmentDownloadController::class, PublicCmsAttachmentDownloadController::class);
-        $container->transient(PublicCmsRouteRegistrar::class, PublicCmsRouteRegistrar::class);
-        $container->tag(PublicCmsRouteRegistrar::class, RouteRegistrarInterface::class);
     }
 
     /**

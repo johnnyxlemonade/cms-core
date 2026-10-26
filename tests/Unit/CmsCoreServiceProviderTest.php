@@ -22,7 +22,7 @@ use PHPUnit\Framework\TestCase;
 final class CmsCoreServiceProviderTest extends TestCase
 {
     /**
-     * Overuje registraci CMS routingu bez locale a module adapteru
+     * Overuje registraci CMS runtime bez host rout a adapteru
      */
     public function testItRegistersReusableCmsRuntimeWithoutHostPortBindings(): void
     {
@@ -37,6 +37,6 @@ final class CmsCoreServiceProviderTest extends TestCase
         self::assertTrue($container->isBound(PublicLocaleRoutingMiddleware::class));
         self::assertTrue($container->isBound(PublicCmsRouteResolver::class));
         self::assertTrue($container->isBound(PublicCmsRouteController::class));
-        self::assertTrue($container->isBound(PublicCmsRouteRegistrar::class));
+        self::assertFalse($container->isBound(PublicCmsRouteRegistrar::class));
     }
 }
