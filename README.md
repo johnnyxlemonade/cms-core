@@ -54,3 +54,24 @@ composer stan
 composer test
 composer qa
 ```
+
+## Non-hierarchical content reads
+
+`CmsContentReadModel(Database, CmsContentDefinition)` supplies `exists()`,
+`ownerId()`, `metadata()`, `translation()`, `publication()`, `findForEditor()`,
+`tagNamesForLocale()`, `editorLocales()`, `dataGridLocales()` and `enabledLocales()`.
+`CmsDomainMapping::columns()` reads the same `CmsRoot` and `CmsLocalized`
+attributes used by `CmsContentLifecycle`; modules do not maintain another list
+of domain database columns or implement a read adapter.
+
+The editor projection includes all stored translations, ordered localized tags,
+canonical paths, domain values, ownership and audit names. Active reads exclude
+soft-deleted roots; owner lookup includes them. Translation and publication
+lookups retain the stored mutations of deleted roots. Editor languages include
+enabled languages plus disabled languages with a stored mutation; the grid
+language list considers mutations across the whole module, including deleted
+records. Tag suggestions retain their existing locale-wide alphabetical order.
+
+`CmsContentQueries` contains the shared QueryBuilder projections and canonical
+and audit joins. It has no Admin dependency. Pagination, search, filters and
+DataGrid transport are provided by `admin-platform`.

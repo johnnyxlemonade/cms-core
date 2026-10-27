@@ -15,6 +15,14 @@ use PHPUnit\Framework\TestCase;
  */
 final class CmsDomainMappingTest extends TestCase
 {
+    public function testReadColumnsUseTheSameAttributesWithoutConstructingDomainData(): void
+    {
+        self::assertSame([
+            'root' => ['startingPrice' => 'starting_price', 'recommended' => 'recommended', 'count' => 'count'],
+            'localized' => ['location' => 'location'],
+        ], (new CmsDomainMapping(MappedAuctionData::class))->columns());
+    }
+
     public function testMapsAndComparesExactDecimalValues(): void
     {
         $mapping = new CmsDomainMapping(MappedAuctionData::class);

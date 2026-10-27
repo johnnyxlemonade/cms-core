@@ -24,18 +24,13 @@ final readonly class CmsDomainMapping
     public function __construct(private string $dataClass) {}
 
     /**
-     * Vrati normalizovane hodnoty korenovych a lokalizovanych sloupcu
+     * Vrati overene sloupce podle verejnych domenovych vlastnosti bez tvorby dat
      *
-     * @param T $data
-     * @return array{root:array<string,int|string|null>,localized:array<string,int|string|null>}
+     * @return array{root:array<string,string>,localized:array<string,string>}
      */
-    public function values(object $data): array
+    public function columns(): array
     {
-        if (!$data instanceof $this->dataClass) {
-            throw new InvalidArgumentException('CMS domain data has an unexpected class.');
-        }
-
-        $values = ['root' => [], 'localized' => []];
+        $columns = ['root' => [], 'localized' => []];
         foreach ((new ReflectionClass($this->dataClass))->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
             $root = $property->getAttributes(CmsRoot::class);
             $localized = $property->getAttributes(CmsLocalized::class);
@@ -53,10 +48,35 @@ final readonly class CmsDomainMapping
                 : ['id', 'locale', 'title', 'page_title', 'summary', 'content', 'meta_description', 'publication_state', 'published_at', 'created_at', 'updated_at'];
             if (preg_match('/^[a-z][a-z0-9_]*$/D', $mapping->column) !== 1
                 || in_array($mapping->column, $reserved, true)
-                || array_key_exists($mapping->column, $values[$scope])
+                || in_array($mapping->column, $columns[$scope], true)
             ) {
                 throw new InvalidArgumentException('CMS domain column mapping is invalid or duplicated.');
             }
+            $columns[$scope][$property->getName()] = $mapping->column;
+        }
+
+        return $columns;
+    }
+
+    /**
+     * Vrati normalizovane hodnoty korenovych a lokalizovanych sloupcu
+     *
+     * @param T $data
+     * @return array{root:array<string,int|string|null>,localized:array<string,int|string|null>}
+     */
+    public function values(object $data): array
+    {
+        if (!$data instanceof $this->dataClass) {
+            throw new InvalidArgumentException('CMS domain data has an unexpected class.');
+        }
+
+        $columns = $this->columns();
+        $values = ['root' => [], 'localized' => []];
+        foreach ((new ReflectionClass($this->dataClass))->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
+            $scope = array_key_exists($property->getName(), $columns['root']) ? 'root' : 'localized';
+            $mapping = $property->getAttributes($scope === 'root' ? CmsRoot::class : CmsLocalized::class)[0]->newInstance();
+            /** @var ReflectionNamedType $type */
+            $type = $property->getType();
             $values[$scope][$mapping->column] = $this->normalize(
                 $property->getValue($data),
                 $type->getName(),
