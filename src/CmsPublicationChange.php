@@ -35,6 +35,10 @@ final class CmsPublicationChange
         $currentPublishedAt = trim((string) $currentPublishedAt);
         $currentPublishedAt = $currentPublishedAt === '' ? null : $currentPublishedAt;
         if (!$hasRequestedState) {
+            if ($currentState === CmsPublicationState::New) {
+                return [CmsPublicationState::Draft, null, true];
+            }
+
             return [$currentState, $currentPublishedAt, false];
         }
 

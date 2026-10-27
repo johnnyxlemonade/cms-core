@@ -27,6 +27,9 @@ final class CmsContentSchema
         $table->unsignedBigInteger('deleted_by')->nullable();
         $table->unsignedBigInteger('owner_id')->nullable();
         $table->string('author_name', 255)->nullable();
+        foreach (CmsContentInput::DISPLAY_DEFAULTS as $column => $default) {
+            $table->boolean($column)->default($default);
+        }
         $table->datetime('deleted_at')->nullable();
         $table->timestamps();
         $table->index(['deleted_at'], 'idx_' . $rootTable . '_deleted');

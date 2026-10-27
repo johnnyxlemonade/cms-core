@@ -47,7 +47,7 @@ final readonly class CmsContentReadModel
     public function metadata(int $id): ?array
     {
         $columns = (new CmsDomainMapping($this->definition->dataClass))->columns();
-        $row = $this->database->table($this->definition->rootTable)->select(['id', ...array_values($columns['root'])])
+        $row = $this->database->table($this->definition->rootTable)->select(['id', ...array_keys(CmsContentInput::DISPLAY_DEFAULTS), ...array_values($columns['root'])])
             ->where('id', $id)->where('deleted_at', null)->first();
         if ($row !== null) {
             unset($row['id']);

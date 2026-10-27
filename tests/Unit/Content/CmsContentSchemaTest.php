@@ -46,6 +46,9 @@ final class CmsContentSchemaTest extends TestCase
 
         self::assertCount(3, $statements);
         self::assertStringContainsString('`owner_id` BIGINT UNSIGNED NULL', $statements[0]);
+        foreach (\Lemonade\Cms\Content\CmsContentInput::DISPLAY_DEFAULTS as $column => $default) {
+            self::assertStringContainsString(sprintf('`%s` TINYINT(1) NOT NULL DEFAULT %d', $column, $default), $statements[0]);
+        }
         self::assertStringContainsString('`price` DECIMAL(15,2) NULL', $statements[0]);
         self::assertStringContainsString('`location` VARCHAR(255) NULL', $statements[1]);
         self::assertStringContainsString('`publication_state`', $statements[1]);

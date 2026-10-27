@@ -44,7 +44,7 @@ final readonly class CmsDomainMapping
                 throw new InvalidArgumentException('CMS domain properties must use supported scalar types.');
             }
             $reserved = $scope === 'root'
-                ? ['id', 'created_by', 'updated_by', 'deleted_by', 'owner_id', 'deleted_at', 'created_at', 'updated_at']
+                ? ['id', 'created_by', 'updated_by', 'deleted_by', 'owner_id', ...array_keys(CmsContentInput::DISPLAY_DEFAULTS), 'deleted_at', 'created_at', 'updated_at']
                 : ['id', 'locale', 'title', 'page_title', 'summary', 'content', 'meta_description', 'publication_state', 'published_at', 'created_at', 'updated_at'];
             if (preg_match('/^[a-z][a-z0-9_]*$/D', $mapping->column) !== 1
                 || in_array($mapping->column, $reserved, true)

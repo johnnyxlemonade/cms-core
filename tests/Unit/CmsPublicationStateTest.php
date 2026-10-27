@@ -21,4 +21,15 @@ final class CmsPublicationStateTest extends TestCase
         self::assertSame(1, CmsPublicationState::Draft->value);
         self::assertSame(2, CmsPublicationState::Published->value);
     }
+
+    public function testEditorOffersOnlyDraftAndPublishedAndDisplaysNewAsDraft(): void
+    {
+        self::assertSame([
+            '1' => 'admin.status.draft',
+            '2' => 'admin.status.published',
+        ], CmsPublicationState::editorOptionLabelKeys());
+        self::assertSame('1', CmsPublicationState::New->editorValue());
+        self::assertSame('1', CmsPublicationState::Draft->editorValue());
+        self::assertSame('2', CmsPublicationState::Published->editorValue());
+    }
 }

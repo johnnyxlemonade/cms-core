@@ -27,7 +27,7 @@ final readonly class CmsContentQueries
     {
         $columns = (new CmsDomainMapping($this->definition->dataClass))->columns();
         $query = $this->database->table($this->definition->rootTable . ' a')
-            ->select(array_map(static fn(string $column): string => 'a.' . $column, [...self::ROOT_COLUMNS, ...array_values($columns['root'])]));
+            ->select(array_map(static fn(string $column): string => 'a.' . $column, [...self::ROOT_COLUMNS, ...array_keys(CmsContentInput::DISPLAY_DEFAULTS), ...array_values($columns['root'])]));
         foreach (['creator' => 'created_by', 'updater' => 'updated_by', 'deleter' => 'deleted_by', 'owner' => 'owner_id'] as $alias => $column) {
             $name = $alias === 'owner' ? 'owner_name' : $column . '_name';
             $query = $query->joinOn('system_user ' . $alias, $alias . '.id', '=', 'a.' . $column, 'LEFT')

@@ -93,6 +93,12 @@ final readonly class CmsContentLifecycle
                     }
                     $existingTags = $translation === null ? [] : $this->model->tags((int) $translation['id']);
                     $domainChanges = $this->mapping->changes($domain, $root, $translation);
+                    $settingsChanged = false;
+                    foreach ($input->displaySettings as $column => $value) {
+                        if ((int) $root[$column] !== $value) {
+                            $settingsChanged = true;
+                        }
+                    }
                     $content = [
                         'title' => $input->title,
                         'page_title' => $input->pageTitle,
@@ -121,13 +127,13 @@ final readonly class CmsContentLifecycle
                     } catch (InvalidArgumentException $exception) {
                         throw new DomainException($this->validation('publication_invalid'), previous: $exception);
                     }
-                    if (!$domainChanges['root'] && !$translationChanged && !$publicationChanged) {
+                    if (!$domainChanges['root'] && !$settingsChanged && !$translationChanged && !$publicationChanged) {
                         $events->noOp();
 
                         return;
                     }
-                    if ($domainChanges['root']) {
-                        $this->model->saveRoot($id, $values['root'], $now);
+                    if ($domainChanges['root'] || $settingsChanged) {
+                        $this->model->saveRoot($id, array_merge($values['root'], $input->displaySettings), $now);
                         $this->record($events, 'updated', $id);
                     }
                     if ($translationChanged) {
@@ -149,7 +155,11 @@ final readonly class CmsContentLifecycle
                     }
                     if ($publicationChanged) {
                         $this->model->savePublication($id, $input->locale, $publicationState, $publishedAt, $now);
-                        $this->record($events, $publicationState === CmsPublicationState::Published ? 'published' : 'unpublished', $id, ['locale' => $input->locale]);
+                        if ($publicationState === CmsPublicationState::Published
+                            || (int) ($translation['publication_state'] ?? CmsPublicationState::New->value) === CmsPublicationState::Published->value
+                        ) {
+                            $this->record($events, $publicationState === CmsPublicationState::Published ? 'published' : 'unpublished', $id, ['locale' => $input->locale]);
+                        }
                     }
                     $this->model->saveRoot($id, ['updated_by' => $actorUserId], $now);
                 });

@@ -43,7 +43,10 @@ final class CmsPublicationChangeTest extends TestCase
         yield 'retained date' => [true, 2, '', 2, '2027-03-01 10:30:00', [CmsPublicationState::Published, '2027-03-01 10:30:00', false]];
         yield 'unpublish' => [true, 1, '', 2, '2027-03-01 10:30:00', [CmsPublicationState::Draft, null, true]];
         yield 'draft no op' => [true, 1, 'invalid', 1, null, [CmsPublicationState::Draft, null, false]];
-        yield 'new translation' => [false, null, '', null, null, [CmsPublicationState::New, null, false]];
+        yield 'first ordinary save promotes new to draft' => [false, null, '', null, null, [CmsPublicationState::Draft, null, true]];
+        yield 'explicit draft promotes existing new' => [true, 1, '', 0, null, [CmsPublicationState::Draft, null, true]];
+        yield 'publish existing new' => [true, 2, '', 0, null, [CmsPublicationState::Published, '2026-10-01 09:00:00', true]];
+        yield 're-edit draft without publication input' => [false, null, '', 1, null, [CmsPublicationState::Draft, null, false]];
     }
 
     public function testPublicationWithoutDateUsesCurrentTime(): void

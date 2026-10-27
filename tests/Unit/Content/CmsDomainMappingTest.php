@@ -18,7 +18,7 @@ final class CmsDomainMappingTest extends TestCase
     public function testReadColumnsUseTheSameAttributesWithoutConstructingDomainData(): void
     {
         self::assertSame([
-            'root' => ['startingPrice' => 'starting_price', 'recommended' => 'recommended', 'count' => 'count'],
+            'root' => ['startingPrice' => 'starting_price', 'highlighted' => 'highlighted', 'count' => 'count'],
             'localized' => ['location' => 'location'],
         ], (new CmsDomainMapping(MappedAuctionData::class))->columns());
     }
@@ -29,16 +29,16 @@ final class CmsDomainMappingTest extends TestCase
         $data = new MappedAuctionData('Praha', '1234567890123.5', true, null);
 
         self::assertSame([
-            'root' => ['starting_price' => '1234567890123.50', 'recommended' => 1, 'count' => null],
+            'root' => ['starting_price' => '1234567890123.50', 'highlighted' => 1, 'count' => null],
             'localized' => ['location' => 'Praha'],
         ], $mapping->values($data));
         self::assertSame(
             ['root' => false, 'localized' => false],
-            $mapping->changes($data, ['starting_price' => '1234567890123.50', 'recommended' => '1', 'count' => null], ['location' => 'Praha']),
+            $mapping->changes($data, ['starting_price' => '1234567890123.50', 'highlighted' => '1', 'count' => null], ['location' => 'Praha']),
         );
         self::assertSame(
             ['root' => false, 'localized' => true],
-            $mapping->changes($data, ['starting_price' => '1234567890123.50', 'recommended' => '1', 'count' => null], ['location' => 'Brno']),
+            $mapping->changes($data, ['starting_price' => '1234567890123.50', 'highlighted' => '1', 'count' => null], ['location' => 'Brno']),
         );
     }
 
@@ -68,8 +68,8 @@ final readonly class MappedAuctionData
         public ?string $location,
         #[CmsRoot('starting_price', decimalScale: 2)]
         public ?string $startingPrice,
-        #[CmsRoot('recommended')]
-        public bool $recommended,
+        #[CmsRoot('highlighted')]
+        public bool $highlighted,
         #[CmsRoot('count')]
         public ?int $count,
     ) {}
