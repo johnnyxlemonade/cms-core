@@ -6,7 +6,9 @@ namespace Lemonade\Cms\Content\Models;
 
 use Lemonade\Cms\CmsPublicationState;
 use Lemonade\Cms\Content\CmsContentDefinition;
+use Lemonade\Cms\Content\CmsContentQueries;
 use Lemonade\Framework\Database\Database;
+use Lemonade\Framework\Database\QueryBuilder;
 
 /**
  * Uklada spolecne CMS agregaty do oddelenych tabulek konkretniho modulu
@@ -31,6 +33,7 @@ final readonly class CmsContentModel
             'owner_id' => $userId,
             'created_at' => $now,
             'updated_at' => $now,
+            ...$this->definition->rootScope(),
         ]);
         $id = (int) $this->database->lastInsertId();
         $this->database->table($this->definition->translationTable)->insert([
@@ -52,7 +55,7 @@ final readonly class CmsContentModel
      */
     public function rootForUpdate(int $id): ?array
     {
-        return $this->database->table($this->definition->rootTable)
+        return $this->rootQuery()
             ->where('id', $id)->where('deleted_at', null)->lockForUpdate()->first();
     }
 
@@ -63,7 +66,7 @@ final readonly class CmsContentModel
      */
     public function lifecycleForUpdate(int $id): ?array
     {
-        return $this->database->table($this->definition->rootTable)
+        return $this->rootQuery()
             ->where('id', $id)->lockForUpdate()->first();
     }
 
@@ -120,7 +123,7 @@ final readonly class CmsContentModel
     public function saveRoot(int $id, array $values, string $now): void
     {
         $values['updated_at'] = $now;
-        $this->database->table($this->definition->rootTable)->where('id', $id)->set($values)->update();
+        $this->rootQuery()->where('id', $id)->set($values)->update();
     }
 
     /**
@@ -178,5 +181,13 @@ final readonly class CmsContentModel
         $this->database->table($this->definition->translationTable)
             ->where($this->definition->translationForeignKey, $id)
             ->set(['publication_state' => CmsPublicationState::Draft->value, 'published_at' => null, 'updated_at' => $now])->update();
+    }
+
+    /**
+     * Vynuti oddil obsahu pro zamykani a zapis korene
+     */
+    private function rootQuery(): QueryBuilder
+    {
+        return (new CmsContentQueries($this->database, $this->definition))->scope($this->database->table($this->definition->rootTable));
     }
 }

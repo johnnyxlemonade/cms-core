@@ -24,14 +24,14 @@ final readonly class CmsDomainMapping
     public function __construct(private string $dataClass) {}
 
     /**
-     * Vrati overene sloupce podle verejnych domenovych vlastnosti bez tvorby dat
+     * Vrati overene sloupce podle explicitne mapovanych domenovych vlastnosti
      *
      * @return array{root:array<string,string>,localized:array<string,string>}
      */
     public function columns(): array
     {
         $columns = ['root' => [], 'localized' => []];
-        foreach ((new ReflectionClass($this->dataClass))->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
+        foreach ($this->properties() as $property) {
             $root = $property->getAttributes(CmsRoot::class);
             $localized = $property->getAttributes(CmsLocalized::class);
             if (count($root) + count($localized) !== 1) {
@@ -72,7 +72,7 @@ final readonly class CmsDomainMapping
 
         $columns = $this->columns();
         $values = ['root' => [], 'localized' => []];
-        foreach ((new ReflectionClass($this->dataClass))->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
+        foreach ($this->properties() as $property) {
             $scope = array_key_exists($property->getName(), $columns['root']) ? 'root' : 'localized';
             $mapping = $property->getAttributes($scope === 'root' ? CmsRoot::class : CmsLocalized::class)[0]->newInstance();
             /** @var ReflectionNamedType $type */
@@ -99,7 +99,7 @@ final readonly class CmsDomainMapping
     {
         $values = $this->values($data);
         $changes = ['root' => false, 'localized' => false];
-        foreach ((new ReflectionClass($this->dataClass))->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
+        foreach ($this->properties() as $property) {
             $rootAttribute = $property->getAttributes(CmsRoot::class);
             $scope = $rootAttribute !== [] ? 'root' : 'localized';
             $mapping = ($rootAttribute[0] ?? $property->getAttributes(CmsLocalized::class)[0])->newInstance();
@@ -122,6 +122,21 @@ final readonly class CmsDomainMapping
         }
 
         return $changes;
+    }
+
+    /**
+     * Zachova kontrolu verejnych vlastnosti a zahrne explicitne mapovane neverejne
+     *
+     * @return list<ReflectionProperty>
+     */
+    private function properties(): array
+    {
+        return array_values(array_filter(
+            (new ReflectionClass($this->dataClass))->getProperties(),
+            static fn(ReflectionProperty $property): bool => $property->isPublic()
+                || $property->getAttributes(CmsRoot::class) !== []
+                || $property->getAttributes(CmsLocalized::class) !== [],
+        ));
     }
 
     /**

@@ -42,6 +42,71 @@ final class CmsDomainMappingTest extends TestCase
         );
     }
 
+    /**
+     * Mapuje privatni oznacene hodnoty a vynecha vnitrni stav bez atributu
+     */
+    public function testMapsPrivatePropertiesWithoutPersistingInternalState(): void
+    {
+        $data = new readonly class ('Author', 'Prague', ['draft' => 'internal']) {
+            /**
+             * Nastavuje obsahove hodnoty a nemapovany vnitrni stav
+             *
+             * @param array<string,string> $fields
+             */
+            public function __construct(
+                #[CmsRoot('author_name')]
+                private string $authorName,
+                #[CmsLocalized('location')]
+                private string $location,
+                private array $fields,
+            ) {}
+
+            /**
+             * Vraci autora testovaciho zaznamu
+             */
+            public function authorName(): string
+            {
+                return $this->authorName;
+            }
+
+            /**
+             * Vraci lokalizovane pracoviste
+             */
+            public function location(): string
+            {
+                return $this->location;
+            }
+
+            /**
+             * Vraci nemapovany vstup zaznamu
+             *
+             * @return array<string,string>
+             */
+            public function fields(): array
+            {
+                return $this->fields;
+            }
+        };
+        $mapping = new CmsDomainMapping($data::class);
+
+        self::assertSame([
+            'root' => ['authorName' => 'author_name'],
+            'localized' => ['location' => 'location'],
+        ], $mapping->columns());
+        self::assertSame([
+            'root' => ['author_name' => 'Author'],
+            'localized' => ['location' => 'Prague'],
+        ], $mapping->values($data));
+        self::assertSame(
+            ['root' => false, 'localized' => false],
+            $mapping->changes($data, ['author_name' => 'Author'], ['location' => 'Prague']),
+        );
+        self::assertSame(
+            ['root' => true, 'localized' => true],
+            $mapping->changes($data, ['author_name' => 'Other'], ['location' => 'Brno']),
+        );
+    }
+
     public function testRejectsDecimalWithMoreFractionalPlaces(): void
     {
         $this->expectException(InvalidArgumentException::class);

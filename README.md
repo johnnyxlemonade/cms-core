@@ -62,7 +62,9 @@ composer qa
 `tagNamesForLocale()`, `editorLocales()`, `dataGridLocales()` and `enabledLocales()`.
 `CmsDomainMapping::columns()` reads the same `CmsRoot` and `CmsLocalized`
 attributes used by `CmsContentLifecycle`; modules do not maintain another list
-of domain database columns or implement a read adapter.
+of domain database columns or implement a read adapter. Explicitly attributed
+private properties are supported as well; unannotated private state is excluded.
+Public domain properties retain the requirement for exactly one mapping attribute.
 
 The editor projection includes all stored translations, ordered localized tags,
 canonical paths, domain values, ownership and audit names. Active reads exclude
@@ -75,3 +77,19 @@ records. Tag suggestions retain their existing locale-wide alphabetical order.
 `CmsContentQueries` contains the shared QueryBuilder projections and canonical
 and audit joins. It has no Admin dependency. Pagination, search, filters and
 DataGrid transport are provided by `admin-platform`.
+
+## Shared-table content definitions
+
+`CmsContentDefinition::rootScope` optionally constrains a shared root table to an
+explicit partition (for example a content type ID). CMS root reads, locks, writes,
+translation reads and locale projections preserve that scope; domain mapping
+cannot overwrite it. Existing definitions have an empty scope and retain their
+behavior.
+
+An optional `CmsContentValueWriter` participates in `CmsContentLifecycle`'s existing
+transaction. It checks creation before root insertion, initializes draft defaults,
+validates/prepares values after the effective publication state is resolved, and
+writes them once the translation exists. Preparation runs even on otherwise
+unchanged published content; the change flag participates in CMS no-op detection.
+System data, related values, canonical reservations and audit remain atomic. The
+writer must not start a parallel lifecycle or dispatch an independent audit.

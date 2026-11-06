@@ -34,7 +34,7 @@ final readonly class CmsContentQueries
                 ->selectRaw("COALESCE(NULLIF(TRIM(CONCAT_WS(' ', {$alias}.first_name, {$alias}.last_name)), ''), {$alias}.email, '—') AS {$name}");
         }
 
-        return $query;
+        return $this->scope($query, 'a');
     }
 
     /**
@@ -47,6 +47,11 @@ final readonly class CmsContentQueries
             ->select(array_map(static fn(string $column): string => 't.' . $column, [
                 ...self::LOCALIZED_COLUMNS, $this->definition->translationForeignKey, ...array_values($columns['localized']),
             ]));
+
+        if ($this->definition->rootScope() !== []) {
+            $query = $query->joinOn($this->definition->rootTable . ' scope_root', 'scope_root.id', '=', 't.' . $this->definition->translationForeignKey);
+            $query = $this->scope($query, 'scope_root');
+        }
 
         return $this->withCanonicalRoute($query);
     }
@@ -62,5 +67,17 @@ final readonly class CmsContentQueries
             bindings: [$this->definition->moduleCode],
             type: 'LEFT',
         )->selectRaw('route.path AS canonical_path');
+    }
+
+    /**
+     * Omezi dotaz na explicitni oddil sdilene tabulky
+     */
+    public function scope(QueryBuilder $query, string $alias = ''): QueryBuilder
+    {
+        foreach ($this->definition->rootScope() as $column => $value) {
+            $query = $query->where(($alias === '' ? '' : $alias . '.') . $column, $value);
+        }
+
+        return $query;
     }
 }

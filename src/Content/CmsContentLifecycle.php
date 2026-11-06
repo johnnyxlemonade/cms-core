@@ -35,6 +35,7 @@ final readonly class CmsContentLifecycle
         private CmsRouteReservationService $routes,
         private Slugger $slugger,
         private CmsContentRuntime $runtime,
+        private ?CmsContentValueWriter $valueWriter = null,
     ) {}
 
     /**
@@ -43,10 +44,12 @@ final readonly class CmsContentLifecycle
     public function createDraft(int $actorUserId, string $locale): int
     {
         return $this->runtime->execute($actorUserId, function (CmsContentEvents $events) use ($actorUserId, $locale): int {
+            $this->valueWriter?->beforeCreateDraft($locale);
             $id = $this->model->createDraft($actorUserId, $locale, date('Y-m-d H:i:s'));
             if ($id < 1) {
                 throw new RuntimeException($this->validation('save_failed'));
             }
+            $this->valueWriter?->createDraft($id, $locale);
             $this->record($events, 'created', $id);
 
             return $id;
@@ -61,6 +64,9 @@ final readonly class CmsContentLifecycle
     public function save(int $actorUserId, int $id, CmsContentInput $input, object $domain): void
     {
         $values = $this->mapping->values($domain);
+        if (array_intersect_key($values['root'], $this->definition->rootScope()) !== []) {
+            throw new InvalidArgumentException('CMS domain mapping cannot replace the root scope.');
+        }
         if (array_key_exists($this->definition->translationForeignKey, $values['localized'])) {
             throw new InvalidArgumentException('CMS domain mapping cannot replace the translation owner.');
         }
@@ -127,6 +133,10 @@ final readonly class CmsContentLifecycle
                     } catch (InvalidArgumentException $exception) {
                         throw new DomainException($this->validation('publication_invalid'), previous: $exception);
                     }
+                    $valuesChanged = $this->valueWriter?->prepare($id, $input->locale, $publicationState, $domain) === true;
+                    if ($valuesChanged) {
+                        $translationChanged = true;
+                    }
                     if (!$domainChanges['root'] && !$settingsChanged && !$translationChanged && !$publicationChanged) {
                         $events->noOp();
 
@@ -160,6 +170,9 @@ final readonly class CmsContentLifecycle
                         ) {
                             $this->record($events, $publicationState === CmsPublicationState::Published ? 'published' : 'unpublished', $id, ['locale' => $input->locale]);
                         }
+                    }
+                    if ($valuesChanged) {
+                        $this->valueWriter?->save($id, $input->locale);
                     }
                     $this->model->saveRoot($id, ['updated_by' => $actorUserId], $now);
                 });

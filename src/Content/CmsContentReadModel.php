@@ -26,7 +26,7 @@ final readonly class CmsContentReadModel
      */
     public function exists(int $id): bool
     {
-        return $this->database->table($this->definition->rootTable)->where('id', $id)->where('deleted_at', null)->exists();
+        return $this->queries->scope($this->database->table($this->definition->rootTable))->where('id', $id)->where('deleted_at', null)->exists();
     }
 
     /**
@@ -34,7 +34,7 @@ final readonly class CmsContentReadModel
      */
     public function ownerId(int $id): ?int
     {
-        $row = $this->database->table($this->definition->rootTable)->select(['owner_id'])->where('id', $id)->first();
+        $row = $this->queries->scope($this->database->table($this->definition->rootTable))->select(['owner_id'])->where('id', $id)->first();
 
         return $row === null || $row['owner_id'] === null ? null : (int) $row['owner_id'];
     }
@@ -47,7 +47,7 @@ final readonly class CmsContentReadModel
     public function metadata(int $id): ?array
     {
         $columns = (new CmsDomainMapping($this->definition->dataClass))->columns();
-        $row = $this->database->table($this->definition->rootTable)->select(['id', ...array_keys(CmsContentInput::DISPLAY_DEFAULTS), ...array_values($columns['root'])])
+        $row = $this->queries->scope($this->database->table($this->definition->rootTable))->select(['id', ...array_keys(CmsContentInput::DISPLAY_DEFAULTS), ...array_values($columns['root'])])
             ->where('id', $id)->where('deleted_at', null)->first();
         if ($row !== null) {
             unset($row['id']);
@@ -74,6 +74,9 @@ final readonly class CmsContentReadModel
      */
     public function publication(int $id, string $locale): ?array
     {
+        if ($this->definition->rootScope() !== [] && !$this->exists($id)) {
+            return null;
+        }
         return $this->database->table($this->definition->translationTable)->select(['publication_state', 'published_at'])
             ->where($this->definition->translationForeignKey, $id)->where('locale', $locale)->first();
     }
@@ -118,7 +121,7 @@ final readonly class CmsContentReadModel
     public function tagNamesForLocale(string $locale): array
     {
         /** @var list<array{name:string}> $tags */
-        $tags = $this->database->table($this->definition->tagTable . ' tag')
+        $tags = $this->queries->scope($this->database->table($this->definition->tagTable . ' tag'), 'scope_root')
             ->select(['tag.name'])
             ->joinOn(
                 $this->definition->translationTable . ' translation',
@@ -126,6 +129,7 @@ final readonly class CmsContentReadModel
                 '=',
                 'tag.translation_id',
             )
+            ->joinOn($this->definition->rootTable . ' scope_root', 'scope_root.id', '=', 'translation.' . $this->definition->translationForeignKey)
             ->where('translation.locale', $locale)
             ->groupBy('tag.name')
             ->orderBy('tag.name', 'ASC')
@@ -144,6 +148,9 @@ final readonly class CmsContentReadModel
      */
     public function editorLocales(int $articleId): array
     {
+        if ($this->definition->rootScope() !== [] && !$this->exists($articleId)) {
+            return [];
+        }
         /** @var list<array{code:string,name:string,enabled:int,is_default:int,has_translation:int}> $locales */
         $locales = $this->database->table('system_language language')
             ->select([
@@ -174,23 +181,36 @@ final readonly class CmsContentReadModel
      */
     public function dataGridLocales(): array
     {
-        /** @var list<array{code:string,name:string}> $locales */
-        $locales = $this->database->table('system_language language')
-            ->select(['language.code', 'language.name'])
-            ->joinOn(
+        $query = $this->database->table('system_language language')
+            ->select(['language.code', 'language.name']);
+        if ($this->definition->rootScope() === []) {
+            $query = $query->joinOn(
                 $this->definition->translationTable . ' translation',
                 'translation.locale',
                 '=',
                 'language.code',
                 'LEFT',
             )
-            ->whereRaw('language.enabled = 1 OR translation.id IS NOT NULL')
-            ->groupBy('language.code')
-            ->groupBy('language.name')
-            ->groupBy('language.sort_order')
-            ->orderBy('language.sort_order', 'ASC')
-            ->orderBy('language.code', 'ASC')
-            ->getArray();
+                ->whereRaw('language.enabled = 1 OR translation.id IS NOT NULL')
+                ->groupBy('language.code')
+                ->groupBy('language.name')
+                ->groupBy('language.sort_order');
+        } else {
+            $scope = '';
+            $bindings = [];
+            foreach ($this->definition->rootScope() as $column => $value) {
+                $scope .= ' AND scope_root.' . $column . ' = ?';
+                $bindings[] = $value;
+            }
+            $query = $query->whereRaw(
+                'language.enabled = 1 OR EXISTS (SELECT 1 FROM ' . $this->definition->translationTable . ' translation'
+                . ' JOIN ' . $this->definition->rootTable . ' scope_root ON scope_root.id = translation.' . $this->definition->translationForeignKey
+                . ' WHERE translation.locale = language.code' . $scope . ')',
+                $bindings,
+            );
+        }
+        /** @var list<array{code:string,name:string}> $locales */
+        $locales = $query->orderBy('language.sort_order', 'ASC')->orderBy('language.code', 'ASC')->getArray();
 
         return $locales;
     }
