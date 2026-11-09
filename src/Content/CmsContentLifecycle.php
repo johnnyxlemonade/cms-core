@@ -79,23 +79,33 @@ final readonly class CmsContentLifecycle
                     }
                     $translation = $this->model->translationForUpdate($id, $input->locale);
                     if ($translation === null && !$this->runtime->isEnabledLocale($input->locale)) {
-                        throw new DomainException($this->validation('locale_invalid'));
+                        throw new CmsContentValidationException(['locale' => $this->validation('locale_invalid')]);
                     }
-                    if ($input->title === '') {
-                        throw new DomainException($this->validation('title_required'));
+                    $now = date('Y-m-d H:i:s');
+                    try {
+                        [$publicationState, $publishedAt, $publicationChanged] = CmsPublicationChange::resolve(
+                            $input->hasPublication,
+                            $input->publicationState,
+                            $input->publishedAt,
+                            (int) ($translation['publication_state'] ?? CmsPublicationState::New->value),
+                            $translation['published_at'] ?? null,
+                            $now,
+                        );
+                    } catch (InvalidArgumentException $exception) {
+                        throw new CmsContentValidationException([
+                            str_contains($exception->getMessage(), 'date') ? 'published_at' : 'publication_state' => $this->validation('publication_invalid'),
+                        ]);
                     }
-                    if (mb_strlen($input->title) > 180) {
-                        throw new DomainException($this->validation('title_max_length'));
-                    }
+                    CmsContentValidation::assert(CmsContentValidation::content($input, $publicationState, $this->definition->validationPrefix));
                     $hasRoute = $this->routes->hasReservation($this->definition->moduleCode, $id, $input->locale);
-                    $slug = $hasRoute ? null : $this->slugger->slug($input->title, 180, $input->locale);
-                    if ($slug === '') {
-                        throw new DomainException('admin.url_segment.invalid');
+                    $slug = $hasRoute || $input->title === '' ? null : $this->slugger->slug($input->title, 180, $input->locale);
+                    if ($slug === '' || ($publicationState === CmsPublicationState::Published && !$hasRoute && $slug === null)) {
+                        throw new CmsContentValidationException(['title' => 'admin.url_segment.invalid']);
                     }
                     try {
                         $tags = CmsTagNormalizer::normalize($input->tags);
                     } catch (InvalidArgumentException $exception) {
-                        throw new DomainException($this->validation('tag_max_length'), previous: $exception);
+                        throw new CmsContentValidationException(['tags' => $this->validation('tag_max_length')]);
                     }
                     $existingTags = $translation === null ? [] : $this->model->tags((int) $translation['id']);
                     $domainChanges = $this->mapping->changes($domain, $root, $translation);
@@ -112,26 +122,13 @@ final readonly class CmsContentLifecycle
                         'content' => $input->content,
                         'meta_description' => $input->metaDescription,
                     ];
-                    $translationChanged = $translation === null || !$hasRoute || $domainChanges['localized'] || $existingTags !== $tags;
+                    $translationChanged = $translation === null || $slug !== null || $domainChanges['localized'] || $existingTags !== $tags;
                     if ($translation !== null) {
                         foreach ($content as $column => $value) {
                             if ($translation[$column] !== $value) {
                                 $translationChanged = true;
                             }
                         }
-                    }
-                    $now = date('Y-m-d H:i:s');
-                    try {
-                        [$publicationState, $publishedAt, $publicationChanged] = CmsPublicationChange::resolve(
-                            $input->hasPublication,
-                            $input->publicationState,
-                            $input->publishedAt,
-                            (int) ($translation['publication_state'] ?? CmsPublicationState::New->value),
-                            $translation['published_at'] ?? null,
-                            $now,
-                        );
-                    } catch (InvalidArgumentException $exception) {
-                        throw new DomainException($this->validation('publication_invalid'), previous: $exception);
                     }
                     $valuesChanged = $this->valueWriter?->prepare($id, $input->locale, $publicationState, $domain) === true;
                     if ($valuesChanged) {

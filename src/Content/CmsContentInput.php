@@ -53,17 +53,38 @@ final readonly class CmsContentInput
      */
     public static function fromEditor(array $data): self
     {
+        $text = CmsContentValidation::texts($data, ['locale', 'title', 'page_title', 'summary', 'content', 'meta_description', 'published_at']);
+        $errors = [];
+        $state = $data['publication_state'] ?? null;
+        if ($state !== null && !in_array($state, [1, 2, '1', '2'], true)) {
+            $errors['publication_state'] = 'admin.cms_validation.publication_invalid';
+        }
+        if ($text['published_at'] !== null && !CmsContentValidation::validDate($text['published_at'])) {
+            $errors['published_at'] = 'admin.cms_validation.date_invalid';
+        }
+        $tags = $data['tags'] ?? null;
+        if ($tags !== null && !is_string($tags) && (!is_array($tags) || !array_is_list($tags))) {
+            $errors['tags'] = 'admin.cms_validation.invalid';
+        } elseif (is_array($tags)) {
+            foreach ($tags as $tag) {
+                if (!is_string($tag)) {
+                    $errors['tags'] = 'admin.cms_validation.invalid';
+                }
+            }
+        }
+        CmsContentValidation::assert($errors);
+
         return new self(
-            locale: strtolower(trim((string) ($data['locale'] ?? ''))),
-            title: trim((string) ($data['title'] ?? '')),
-            pageTitle: self::nullableText($data['page_title'] ?? null),
-            summary: self::nullableText($data['summary'] ?? null),
-            content: self::nullableText($data['content'] ?? null),
-            metaDescription: self::nullableText($data['meta_description'] ?? null),
-            tags: $data['tags'] ?? null,
-            hasPublication: array_key_exists('publication_state', $data),
-            publicationState: $data['publication_state'] ?? null,
-            publishedAt: $data['published_at'] ?? null,
+            locale: strtolower($text['locale'] ?? ''),
+            title: $text['title'] ?? '',
+            pageTitle: $text['page_title'],
+            summary: $text['summary'],
+            content: $text['content'],
+            metaDescription: $text['meta_description'],
+            tags: $tags,
+            hasPublication: $state !== null,
+            publicationState: $state,
+            publishedAt: $text['published_at'],
             displaySettings: self::displaySettings($data),
         );
     }
@@ -74,22 +95,19 @@ final readonly class CmsContentInput
     private static function displaySettings(array $data): array
     {
         $settings = [];
+        $errors = [];
         foreach (array_keys(self::DISPLAY_DEFAULTS) as $name) {
-            if (array_key_exists($name, $data)) {
-                $settings[$name] = (int) in_array((string) $data[$name], ['1', 'true', 'on'], true);
+            if (isset($data[$name])) {
+                if (!in_array($data[$name], [0, 1, false, true, '', '0', '1', 'false', 'true', 'off', 'on'], true)) {
+                    $errors[$name] = 'admin.cms_validation.invalid';
+                    continue;
+                }
+                $settings[$name] = (int) in_array($data[$name], [1, true, '1', 'true', 'on'], true);
             }
         }
 
+        CmsContentValidation::assert($errors);
+
         return $settings;
-    }
-
-    /**
-     * Prevede prazdny volitelny text na null
-     */
-    private static function nullableText(mixed $value): ?string
-    {
-        $text = trim((string) $value);
-
-        return $text === '' ? null : $text;
     }
 }

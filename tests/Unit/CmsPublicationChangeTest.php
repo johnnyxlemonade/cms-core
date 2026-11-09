@@ -36,13 +36,13 @@ final class CmsPublicationChangeTest extends TestCase
      */
     public static function changes(): iterable
     {
-        yield 'missing state' => [false, null, 'invalid', 2, '2026-10-01 10:00:00', [CmsPublicationState::Published, '2026-10-01 10:00:00', false]];
-        yield 'new retains publication' => [true, 0, '', 2, '2026-10-01 10:00:00', [CmsPublicationState::Published, '2026-10-01 10:00:00', false]];
+        yield 'missing state' => [false, null, '', 2, '2026-10-01 10:00:00', [CmsPublicationState::Published, '2026-10-01 10:00:00', false]];
+        yield 'transport null retains publication' => [true, null, '', 2, '2026-10-01 10:00:00', [CmsPublicationState::Published, '2026-10-01 10:00:00', false]];
         yield 'scheduled' => [true, 2, '2027-03-01T10:30', 1, null, [CmsPublicationState::Published, '2027-03-01 10:30:00', true]];
         yield 'same date' => [true, 2, '2027-03-01T10:30', 2, '2027-03-01 10:30:00', [CmsPublicationState::Published, '2027-03-01 10:30:00', false]];
         yield 'retained date' => [true, 2, '', 2, '2027-03-01 10:30:00', [CmsPublicationState::Published, '2027-03-01 10:30:00', false]];
         yield 'unpublish' => [true, 1, '', 2, '2027-03-01 10:30:00', [CmsPublicationState::Draft, null, true]];
-        yield 'draft no op' => [true, 1, 'invalid', 1, null, [CmsPublicationState::Draft, null, false]];
+        yield 'draft no op' => [true, 1, '', 1, null, [CmsPublicationState::Draft, null, false]];
         yield 'first ordinary save promotes new to draft' => [false, null, '', null, null, [CmsPublicationState::Draft, null, true]];
         yield 'explicit draft promotes existing new' => [true, 1, '', 0, null, [CmsPublicationState::Draft, null, true]];
         yield 'publish existing new' => [true, 2, '', 0, null, [CmsPublicationState::Published, '2026-10-01 09:00:00', true]];
@@ -82,6 +82,14 @@ final class CmsPublicationChangeTest extends TestCase
     public static function invalidValues(): iterable
     {
         yield 'invalid state' => [3, ''];
+        yield 'internal new state' => [0, ''];
+        yield 'empty state' => ['', ''];
+        yield 'coerced state' => ['2invalid', ''];
+        yield 'array state' => [[], ''];
+        yield 'boolean state' => [true, ''];
+        yield 'draft date' => [1, 'invalid'];
+        yield 'null byte date' => [2, "2028-01-01T12:00\0"];
+        yield 'unsupported date year' => [2, '0001-01-01T12:00'];
         yield 'invalid date' => [2, '2026-02-30T12:00'];
         yield 'invalid format' => [2, '2026-10-01 10:00:00'];
     }

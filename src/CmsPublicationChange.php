@@ -6,6 +6,7 @@ namespace Lemonade\Cms;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use Lemonade\Cms\Content\CmsContentValidation;
 
 /**
  * Vyhodnocuje zmenu publikacniho stavu jedne lokalizovane mutace
@@ -34,7 +35,14 @@ final class CmsPublicationChange
             ?? CmsPublicationState::New;
         $currentPublishedAt = trim((string) $currentPublishedAt);
         $currentPublishedAt = $currentPublishedAt === '' ? null : $currentPublishedAt;
-        if (!$hasRequestedState) {
+        if ($publishedAt !== null && (!is_string($publishedAt) || str_contains($publishedAt, "\0"))) {
+            throw new InvalidArgumentException('Invalid publication date.');
+        }
+        $publishedAtInput = trim($publishedAt ?? '');
+        if ($publishedAtInput !== '' && !CmsContentValidation::validDate($publishedAtInput)) {
+            throw new InvalidArgumentException('Invalid publication date.');
+        }
+        if (!$hasRequestedState || $requestedState === null) {
             if ($currentState === CmsPublicationState::New) {
                 return [CmsPublicationState::Draft, null, true];
             }
@@ -42,15 +50,11 @@ final class CmsPublicationChange
             return [$currentState, $currentPublishedAt, false];
         }
 
-        $requestedState = CmsPublicationState::tryFrom((int) $requestedState);
-        if ($requestedState === null) {
+        if (!in_array($requestedState, [1, 2, '1', '2'], true)) {
             throw new InvalidArgumentException('Invalid publication state.');
         }
-        if ($requestedState === CmsPublicationState::New) {
-            return [$currentState, $currentPublishedAt, false];
-        }
+        $requestedState = CmsPublicationState::from((int) $requestedState);
 
-        $publishedAtInput = trim((string) ($publishedAt ?? ''));
         $resolvedPublishedAt = null;
         if ($requestedState === CmsPublicationState::Published) {
             if ($publishedAtInput === '') {
