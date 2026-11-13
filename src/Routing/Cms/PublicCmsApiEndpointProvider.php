@@ -22,7 +22,7 @@ final readonly class PublicCmsApiEndpointProvider implements ApiEndpointProvider
     public function register(ApiEndpointRegistry $registry): void
     {
         $registry->get(
-            path: '/file/{file}/download',
+            path: '/file/download/{fileId}',
             controllerAction: ControllerAction::for(
                 controllerClass: PublicCmsAttachmentDownloadController::class,
                 method: 'download',

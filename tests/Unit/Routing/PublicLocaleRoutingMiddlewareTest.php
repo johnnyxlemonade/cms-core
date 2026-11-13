@@ -120,7 +120,7 @@ final class PublicLocaleRoutingMiddlewareTest extends TestCase
     public function testApiPathBypassesThePublicLocaleRegistry(): void
     {
         $registry = new PublicLocaleTestRegistry();
-        $request = new ServerRequest('GET', '/api/file/14/download');
+        $request = new ServerRequest('GET', '/api/file/download/14');
         $handler = new CapturingLocaleRequestHandler();
 
         $this->middleware($registry, $request)->process($request, $handler);
@@ -134,7 +134,7 @@ final class PublicLocaleRoutingMiddlewareTest extends TestCase
      */
     public function testLocalePrefixedApiPathReturnsNotFound(): void
     {
-        foreach (['/en/api/file/14/download', '/cs/api/file/14/download'] as $path) {
+        foreach (['/en/api/file/download/14', '/cs/api/file/download/14'] as $path) {
             $registry = new PublicLocaleTestRegistry();
             $request = new ServerRequest('GET', $path);
             $handler = new CapturingLocaleRequestHandler();

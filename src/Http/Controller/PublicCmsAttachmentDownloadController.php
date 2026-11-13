@@ -26,8 +26,8 @@ final readonly class PublicCmsAttachmentDownloadController
     /**
      * Odesle hostem autorizovany attachment nebo bezpecne skryje jeho existenci
      */
-    public function download(int $file): ResponseInterface
+    public function download(int $fileId): ResponseInterface
     {
-        return $this->handlers->handler($this->container)?->downloadAttachment($file) ?? $this->responses->text('', 404);
+        return $this->handlers->handler($this->container)?->downloadAttachment($fileId) ?? $this->responses->text('', 404);
     }
 }

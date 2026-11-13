@@ -19,7 +19,7 @@ use PHPUnit\Framework\TestCase;
 final class PublicCmsApiEndpointProviderTest extends TestCase
 {
     /**
-     * Overuje public policy, puvodni URL a file parametr canonical RouteMatch
+     * Verifies public access, the download URL, and the fileId route parameter
      */
     public function testItRegistersPublicParameterizedAttachmentEndpoint(): void
     {
@@ -30,16 +30,16 @@ final class PublicCmsApiEndpointProviderTest extends TestCase
 
         self::assertNotNull($endpoint);
         self::assertSame(ApiAccess::Public, $endpoint->access());
-        self::assertSame('/file/{file}/download', $endpoint->path());
+        self::assertSame('/file/download/{fileId}', $endpoint->path());
         self::assertSame(PublicCmsAttachmentDownloadController::class, $endpoint->controllerAction()->controllerClass());
 
         $router = new Router();
         (new ApiEndpointRegistrar($router, $endpoints))->registerRoutes('/api');
-        $match = $router->match(new ServerRequest('GET', '/api/file/14/download'));
+        $match = $router->match(new ServerRequest('GET', '/api/file/download/14'));
 
         self::assertSame('api.file.download', $match->name());
-        self::assertSame('/api/file/{file}/download', $match->path());
+        self::assertSame('/api/file/download/{fileId}', $match->path());
         self::assertSame('GET', $match->method());
-        self::assertSame(['file' => '14'], $match->params());
+        self::assertSame(['fileId' => '14'], $match->params());
     }
 }
