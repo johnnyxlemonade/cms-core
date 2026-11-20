@@ -23,7 +23,7 @@ final class CmsContentSchemaTest extends TestCase
     public function testSchemaContainsContentOwnershipPublicationAndTags(): void
     {
         $statements = [];
-        $driver = $this->createMock(DatabaseDriverInterface::class);
+        $driver = self::createStub(DatabaseDriverInterface::class);
         $driver->method('query')->willReturnCallback(static function (string $statement) use (&$statements): bool {
             $statements[] = $statement;
 

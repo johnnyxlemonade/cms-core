@@ -132,7 +132,7 @@ final class CmsRouteReservationServiceTest extends TestCase
 
     private function service(ConnectionInterface $connection): CmsRouteReservationService
     {
-        $database = new Database($connection, $this->createMock(DatabaseDriverInterface::class));
+        $database = new Database($connection, self::createStub(DatabaseDriverInterface::class));
 
         $router = new Router();
         $router->getNamed(

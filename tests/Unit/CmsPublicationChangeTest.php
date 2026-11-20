@@ -7,6 +7,7 @@ namespace Lemonade\Cms\Tests\Unit;
 use InvalidArgumentException;
 use Lemonade\Cms\CmsPublicationChange;
 use Lemonade\Cms\CmsPublicationState;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -14,10 +15,8 @@ use PHPUnit\Framework\TestCase;
  */
 final class CmsPublicationChangeTest extends TestCase
 {
-    /**
-     * @dataProvider changes
-     * @param array{CmsPublicationState,string|null,bool} $expected
-     */
+    /** @param array{CmsPublicationState,string|null,bool} $expected */
+    #[DataProvider('changes')]
     public function testPublicationChange(
         bool $present,
         mixed $requested,
@@ -67,9 +66,7 @@ final class CmsPublicationChangeTest extends TestCase
         );
     }
 
-    /**
-     * @dataProvider invalidValues
-     */
+    #[DataProvider('invalidValues')]
     public function testInvalidPublicationValuesAreRejected(mixed $state, string $date): void
     {
         $this->expectException(InvalidArgumentException::class);
