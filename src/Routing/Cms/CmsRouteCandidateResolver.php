@@ -25,6 +25,7 @@ final class CmsRouteCandidateResolver
         array $routes,
         int $maximumSlugLength = self::MAXIMUM_SLUG_LENGTH,
         ?callable $isReserved = null,
+        string $pathPrefix = '',
     ): CmsRouteReservation {
         $occupiedPaths = [];
         foreach ($routes as $route) {
@@ -35,7 +36,7 @@ final class CmsRouteCandidateResolver
         }
         for ($suffix = 0; $suffix < 10000; $suffix++) {
             $slug = $this->candidate($baseSlug, $suffix, $maximumSlugLength);
-            $path = $slug;
+            $path = $pathPrefix === '' ? $slug : $pathPrefix . '/' . $slug;
             if (!isset($occupiedPaths[$path]) && !($isReserved !== null && $isReserved($path))) {
                 return new CmsRouteReservation($slug, $path);
             }

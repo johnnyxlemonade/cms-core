@@ -145,7 +145,14 @@ final readonly class CmsContentLifecycle
                     }
                     if ($translationChanged) {
                         if ($slug !== null) {
-                            $this->routes->reserveAutomatic($this->definition->moduleCode, $id, $input->locale, $slug, 180);
+                            $this->routes->reserveAutomatic(
+                                moduleCode: $this->definition->moduleCode,
+                                entityId: $id,
+                                locale: $input->locale,
+                                baseSlug: $slug,
+                                maximumSlugLength: 180,
+                                pathPrefix: $this->definition->routePrefix($input->locale),
+                            );
                         }
                         $translationId = $this->model->saveTranslation(
                             $id,
@@ -211,7 +218,11 @@ final readonly class CmsContentLifecycle
                 return $segment;
             }
             try {
-                $this->routes->reserveExplicit($this->definition->moduleCode, $id, $locale, $segment);
+                $pathPrefix = $currentPath === null
+                    ? $this->definition->routePrefix($locale)
+                    : $this->pathPrefix($currentPath);
+                $path = $pathPrefix === '' ? $segment : $pathPrefix . '/' . $segment;
+                $this->routes->reserveExplicit($this->definition->moduleCode, $id, $locale, $path);
             } catch (CmsRouteValidationException $exception) {
                 throw new DomainException(match ($exception->getMessage()) {
                     'cms.route.path_reserved' => 'admin.url_segment.reserved',
@@ -300,6 +311,16 @@ final readonly class CmsContentLifecycle
     private function validation(string $key): string
     {
         return $this->definition->validationPrefix . '.validation.' . $key;
+    }
+
+    /**
+     * Returns the directory of an existing canonical path without its final segment
+     */
+    private function pathPrefix(string $path): string
+    {
+        $prefix = dirname($path);
+
+        return $prefix === '.' ? '' : $prefix;
     }
 
     /**

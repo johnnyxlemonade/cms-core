@@ -14,6 +14,8 @@ final class CmsRouteReservationService
 {
     private const MAXIMUM_RESERVATION_ATTEMPTS = 4;
 
+    private const MAXIMUM_PATH_LENGTH = 700;
+
     /**
      * Nastavuje persistence rout a resolver volnych suffix kandidatu
      */
@@ -48,7 +50,14 @@ final class CmsRouteReservationService
         string $locale,
         string $baseSlug,
         int $maximumSlugLength = 255,
+        string $pathPrefix = '',
     ): CmsRouteReservation {
+        $pathPrefix = $this->normalizedPathPrefix($pathPrefix);
+        $prefixLength = $pathPrefix === '' ? 0 : strlen($pathPrefix) + 1;
+        $maximumSlugLength = min($maximumSlugLength, self::MAXIMUM_PATH_LENGTH - $prefixLength);
+        if ($maximumSlugLength < 1) {
+            throw new CmsRouteValidationException('cms.route.path_invalid');
+        }
         for ($attempt = 1; $attempt <= self::MAXIMUM_RESERVATION_ATTEMPTS; $attempt++) {
             $reservation = $this->candidates->resolve(
                 moduleCode: $moduleCode,
@@ -57,6 +66,7 @@ final class CmsRouteReservationService
                 routes: $this->routes->routesForLocale($locale),
                 maximumSlugLength: $maximumSlugLength,
                 isReserved: $this->reservedPaths->isReserved(...),
+                pathPrefix: $pathPrefix,
             );
             try {
                 $this->routes->reserve(
@@ -214,7 +224,7 @@ final class CmsRouteReservationService
     {
         $path = trim(trim($path), '/');
         if ($path === ''
-            || strlen($path) > 700
+            || strlen($path) > self::MAXIMUM_PATH_LENGTH
             || preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/D', $path) !== 1
         ) {
             throw new CmsRouteValidationException('cms.route.path_invalid');
@@ -224,6 +234,22 @@ final class CmsRouteReservationService
         }
 
         return $path;
+    }
+
+    /**
+     * Normalizes the optional directory of an automatically reserved canonical path
+     */
+    private function normalizedPathPrefix(string $pathPrefix): string
+    {
+        $pathPrefix = trim(trim($pathPrefix), '/');
+        if ($pathPrefix !== '' && (
+            strlen($pathPrefix) >= self::MAXIMUM_PATH_LENGTH
+            || preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/D', $pathPrefix) !== 1
+        )) {
+            throw new CmsRouteValidationException('cms.route.path_invalid');
+        }
+
+        return $pathPrefix;
     }
 
     /**

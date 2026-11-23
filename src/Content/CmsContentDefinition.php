@@ -16,6 +16,7 @@ final readonly class CmsContentDefinition
      *
      * @param class-string $dataClass
      * @param array<string,int|string> $rootScope
+     * @param array<string,string> $routePrefixes
      */
     public function __construct(
         public string $moduleCode,
@@ -28,6 +29,7 @@ final readonly class CmsContentDefinition
         public string $validationPrefix,
         public string $dataClass,
         private array $rootScope = [],
+        private array $routePrefixes = [],
     ) {
         foreach ([$entityType, $rootTable, $translationTable, $translationForeignKey, $tagTable, $translationUniqueConstraint, $validationPrefix] as $identifier) {
             if (preg_match('/^[a-z][a-z0-9_]*$/D', $identifier) !== 1) {
@@ -42,6 +44,14 @@ final readonly class CmsContentDefinition
                 throw new InvalidArgumentException('Invalid CMS root scope.');
             }
         }
+        foreach ($routePrefixes as $locale => $prefix) {
+            if (preg_match('/^[a-z][a-z0-9-]{1,9}$/D', $locale) !== 1
+                || strlen($prefix) > 180
+                || preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/D', $prefix) !== 1
+            ) {
+                throw new InvalidArgumentException('Invalid CMS route prefix.');
+            }
+        }
     }
 
     /**
@@ -52,5 +62,13 @@ final readonly class CmsContentDefinition
     public function rootScope(): array
     {
         return $this->rootScope;
+    }
+
+    /**
+     * Returns the optional canonical path prefix for one locale
+     */
+    public function routePrefix(string $locale): string
+    {
+        return $this->routePrefixes[$locale] ?? '';
     }
 }
