@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Lemonade\Cms\Routing\Locale;
 
 /**
- * Vyjadruje routu, canonical redirect nebo neplatnou verejnou lokalizaci
+ * Represents a route, canonical redirect or invalid public locale
  */
 final readonly class PublicLocaleResolution
 {
     /**
-     * Nastavuje vysledek bez kombinovani redirectu a routy
+     * Receives a result without combining redirects and routes
      */
     private function __construct(
         private string $defaultLocale,
@@ -20,7 +20,7 @@ final readonly class PublicLocaleResolution
     ) {}
 
     /**
-     * Vytvori vysledek routovani pro platnou lokalizaci
+     * Creates a route result for a valid locale
      */
     public static function route(string $defaultLocale, string $locale, string $path): self
     {
@@ -28,7 +28,7 @@ final readonly class PublicLocaleResolution
     }
 
     /**
-     * Vytvori canonical redirect pro redundantni locale prefix
+     * Creates a canonical redirect for a redundant locale prefix
      */
     public static function redirect(string $defaultLocale, string $to): self
     {
@@ -36,7 +36,7 @@ final readonly class PublicLocaleResolution
     }
 
     /**
-     * Vytvori vysledek pro neznamou nebo vypnutou lokalizaci
+     * Creates a result for an unknown or disabled locale
      */
     public static function notFound(string $defaultLocale): self
     {
@@ -44,33 +44,33 @@ final readonly class PublicLocaleResolution
     }
 
     /**
-     * Vrati vychozi lokalizaci bez canonical URL prefixu
+     * Returns the default locale without a canonical URL prefix
      */
-    public function defaultLocale(): string
+    public function getDefaultLocale(): string
     {
         return $this->defaultLocale;
     }
 
     /**
-     * Vrati lokalizaci pouzitou pro vyhledani routy
+     * Returns the locale used to find the route
      */
-    public function locale(): ?string
+    public function getLocale(): ?string
     {
         return $this->locale;
     }
 
     /**
-     * Vrati cestu bez locale prefixu
+     * Returns the path without a locale prefix
      */
-    public function path(): ?string
+    public function getPath(): ?string
     {
         return $this->path;
     }
 
     /**
-     * Vrati cil canonical redirectu, pokud je nutny
+     * Returns the canonical redirect target when needed
      */
-    public function redirectTo(): ?string
+    public function getRedirectTo(): ?string
     {
         return $this->redirectTo;
     }

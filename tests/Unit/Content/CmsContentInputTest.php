@@ -12,7 +12,7 @@ use Lemonade\Cms\Content\CmsContentValidationException;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Overuje typy spolecneho vstupu a oddeleni publikacniho zameru
+ * Verifies shared input types and explicit publication intent
  */
 final class CmsContentInputTest extends TestCase
 {
@@ -36,18 +36,18 @@ final class CmsContentInputTest extends TestCase
     }
 
     /**
-     * Neodeslana i transportem doplnena publikace zachova puvodni stav
+     * Missing or null publication input preserves the stored state
      */
     public function testMissingPublicationIsNotAnExplicitDraftRequest(): void
     {
         foreach ([[], ['publication_state' => null]] as $payload) {
-            self::assertFalse(CmsContentInput::fromEditor($payload)->hasPublication);
+            self::assertFalse(CmsContentInput::fromEditor($payload)->hasPublication());
         }
-        self::assertTrue(CmsContentInput::fromEditor(['publication_state' => '1'])->hasPublication);
+        self::assertTrue(CmsContentInput::fromEditor(['publication_state' => '1'])->hasPublication());
     }
 
     /**
-     * Povinnost titulku zavisi pouze na vyslednem stavu
+     * Title requirements depend on the resulting publication state
      */
     public function testDraftMayBeEmptyButPublishedContentRequiresTitle(): void
     {
@@ -57,7 +57,7 @@ final class CmsContentInputTest extends TestCase
     }
 
     /**
-     * Delky SEO a titulku plati v obou stavech a vraci vsechny chyby
+     * SEO and title limits apply to both states and report every error
      */
     public function testFilledValuesAreValidatedInBothStates(): void
     {
@@ -68,7 +68,7 @@ final class CmsContentInputTest extends TestCase
     }
 
     /**
-     * Strukturovany obsah se nepretypuje na text
+     * Structured content is rejected instead of being cast to text
      */
     public function testStructuredValuesReturnEveryAffectedField(): void
     {
@@ -76,12 +76,12 @@ final class CmsContentInputTest extends TestCase
             CmsContentInput::fromEditor(['locale' => [], 'summary' => ['text'], 'content' => new \stdClass()]);
             self::fail('Structured text accepted');
         } catch (CmsContentValidationException $exception) {
-            self::assertSame(['locale', 'summary', 'content'], array_keys($exception->errors()));
+            self::assertSame(['locale', 'summary', 'content'], array_keys($exception->getErrors()));
         }
     }
 
     /**
-     * Vyplnene neplatne datum, stitky a prepinace jsou chybou i v konceptu
+     * Invalid dates, tags and switches are rejected even for drafts
      */
     public function testInvalidOptionalValuesCannotBeSilentlyDiscarded(): void
     {
@@ -90,7 +90,7 @@ final class CmsContentInputTest extends TestCase
                 CmsContentInput::fromEditor($payload);
                 self::fail('Invalid value accepted');
             } catch (CmsContentValidationException $exception) {
-                self::assertArrayHasKey(array_key_first($payload), $exception->errors());
+                self::assertArrayHasKey(array_key_first($payload), $exception->getErrors());
             }
         }
     }

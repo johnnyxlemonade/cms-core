@@ -8,17 +8,17 @@ use DateTimeImmutable;
 use Lemonade\Cms\CmsPublicationState;
 
 /**
- * Sdili typovou kontrolu CMS vstupu a povinnost obsahu podle vysledne publikace
+ * Validates CMS transport values and content required for publication
  */
 final class CmsContentValidation
 {
     /**
-     * Brani vytvareni instance stateless validace
+     * Prevents construction of a stateless validator
      */
     private function __construct() {}
 
     /**
-     * Odmitne strukturovane hodnoty pred normalizaci textovych poli
+     * Rejects structured values before normalizing text fields
      *
      * @param array<string,mixed> $data
      * @param list<string> $fields
@@ -43,7 +43,7 @@ final class CmsContentValidation
     }
 
     /**
-     * Overi skutecne datum ve formatu editoru a rozsahu databaze
+     * Checks a real date in editor format and supported database range
      */
     public static function validDate(string $value, bool $withTime = true): bool
     {
@@ -57,22 +57,22 @@ final class CmsContentValidation
     }
 
     /**
-     * Vrati vsechny chyby spolecneho obsahu pro vysledny stav
+     * Returns shared content errors for the resulting publication state
      *
      * @return array<string,string>
      */
     public static function content(CmsContentInput $input, CmsPublicationState $state, string $prefix): array
     {
         $errors = [];
-        if ($state === CmsPublicationState::Published && trim($input->title) === '') {
+        if ($state === CmsPublicationState::Published && trim($input->getTitle()) === '') {
             $errors['title'] = $prefix . '.validation.title_required';
         }
-        foreach (['title' => $input->title, 'page_title' => $input->pageTitle, 'meta_description' => $input->metaDescription] as $field => $value) {
+        foreach (['title' => $input->getTitle(), 'page_title' => $input->getPageTitle(), 'meta_description' => $input->getMetaDescription()] as $field => $value) {
             if ($value !== null && mb_strlen($value) > ($field === 'meta_description' ? 255 : 180)) {
                 $errors[$field] = $prefix . '.validation.' . $field . '_max_length';
             }
         }
-        if ($input->locale === '') {
+        if ($input->getLocale() === '') {
             $errors['locale'] = 'admin.cms_validation.locale_invalid';
         }
 
@@ -80,7 +80,7 @@ final class CmsContentValidation
     }
 
     /**
-     * Odmitne neplatna pole jedinou strukturovanou vyjimkou
+     * Rejects invalid fields with one structured exception
      *
      * @param array<string,string> $errors
      */

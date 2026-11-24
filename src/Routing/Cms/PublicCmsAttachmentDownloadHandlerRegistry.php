@@ -8,14 +8,14 @@ use Closure;
 use Lemonade\Framework\Container\ContainerInterface;
 
 /**
- * Drzi request-scoped factory host download handleru
+ * Holds the host download handler factory for the request scope
  */
 final class PublicCmsAttachmentDownloadHandlerRegistry
 {
     private ?Closure $factory = null;
 
     /**
-     * Nastavi jedinou host factory pro verejne attachment downloady
+     * Registers the one host factory for public attachment downloads
      *
      * @param Closure(ContainerInterface):PublicCmsAttachmentDownloadHandlerInterface $factory
      */
@@ -25,7 +25,7 @@ final class PublicCmsAttachmentDownloadHandlerRegistry
     }
 
     /**
-     * Vytvori host handler v aktivnim request scope nebo vrati null
+     * Creates the host handler in the active request scope or returns null
      */
     public function handler(ContainerInterface $container): ?PublicCmsAttachmentDownloadHandlerInterface
     {

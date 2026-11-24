@@ -5,19 +5,19 @@ declare(strict_types=1);
 namespace Lemonade\Cms\Content;
 
 /**
- * Zaznamenava auditni udalosti jedne transakcni mutace obsahu
+ * Records audit events for one transactional content mutation
  */
 interface CmsContentEvents
 {
     /**
-     * Zaznamena skutecnou zmenu konkretniho CMS zaznamu
+     * Records an actual change to a specific CMS record
      *
      * @param array<string,mixed> $payload
      */
     public function record(string $event, string $moduleCode, string $entityType, int $entityId, array $payload = []): void;
 
     /**
-     * Oznaci transakci bez skutecne zmeny
+     * Marks a transaction without an actual change
      */
     public function noOp(): void;
 }

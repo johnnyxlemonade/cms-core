@@ -7,27 +7,27 @@ namespace Lemonade\Cms\Content;
 use Lemonade\Cms\CmsPublicationState;
 
 /**
- * Uklada pridruzene domenove hodnoty uvnitr zamcene CMS transakce
+ * Writes domain values inside a locked CMS transaction
  */
 interface CmsContentValueWriter
 {
     /**
-     * Overi a zamkne definici pred zalozenim root zaznamu ve stejne transakci
+     * Validates and locks a definition before creating a root record
      */
     public function beforeCreateDraft(string $locale): void;
 
     /**
-     * Inicializuje hodnoty noveho konceptu pred zapisem created auditu
+     * Initializes new draft values before recording creation
      */
     public function createDraft(int $id, string $locale): void;
 
     /**
-     * Validuje i nezmeneny publikovany obsah a vrati, zda hodnoty zmenil
+     * Validates published values and reports whether they changed
      */
     public function prepare(int $id, string $locale, CmsPublicationState $state, object $domain): bool;
 
     /**
-     * Ulozi pripravene hodnoty po vytvoreni jazykove mutace ve stejne transakci
+     * Saves prepared values after creating the translation in the same transaction
      */
     public function save(int $id, string $locale): void;
 }

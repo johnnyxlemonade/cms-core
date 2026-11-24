@@ -7,29 +7,30 @@ namespace Lemonade\Cms\Content;
 use InvalidArgumentException;
 
 /**
- * Urci identitu a tabulky jednoho nehierarchickeho CMS modulu
+ * Defines the identity and tables of one nonhierarchical CMS module
  */
 final readonly class CmsContentDefinition
 {
     /**
-     * Nastavuje canonical kod, auditni identitu a vlastnene tabulky
+     * Sets the module identity, owned tables and optional body columns
      *
      * @param class-string $dataClass
      * @param array<string,int|string> $rootScope
      * @param array<string,string> $routePrefixes
      */
     public function __construct(
-        public string $moduleCode,
-        public string $entityType,
-        public string $rootTable,
-        public string $translationTable,
-        public string $translationForeignKey,
-        public string $tagTable,
-        public string $translationUniqueConstraint,
-        public string $validationPrefix,
-        public string $dataClass,
+        private string $moduleCode,
+        private string $entityType,
+        private string $rootTable,
+        private string $translationTable,
+        private string $translationForeignKey,
+        private string $tagTable,
+        private string $translationUniqueConstraint,
+        private string $validationPrefix,
+        private string $dataClass,
         private array $rootScope = [],
         private array $routePrefixes = [],
+        private bool $hasBodyColumns = true,
     ) {
         foreach ([$entityType, $rootTable, $translationTable, $translationForeignKey, $tagTable, $translationUniqueConstraint, $validationPrefix] as $identifier) {
             if (preg_match('/^[a-z][a-z0-9_]*$/D', $identifier) !== 1) {
@@ -55,7 +56,89 @@ final readonly class CmsContentDefinition
     }
 
     /**
-     * Vraci omezeni korenovych zaznamu na konkretni typ
+     * Returns the owning CMS module code
+     */
+    public function getModuleCode(): string
+    {
+        return $this->moduleCode;
+    }
+
+    /**
+     * Returns the audited entity type
+     */
+    public function getEntityType(): string
+    {
+        return $this->entityType;
+    }
+
+    /**
+     * Returns the root record table
+     */
+    public function getRootTable(): string
+    {
+        return $this->rootTable;
+    }
+
+    /**
+     * Returns the localized record table
+     */
+    public function getTranslationTable(): string
+    {
+        return $this->translationTable;
+    }
+
+    /**
+     * Returns the foreign key from translations to root records
+     */
+    public function getTranslationForeignKey(): string
+    {
+        return $this->translationForeignKey;
+    }
+
+    /**
+     * Returns the table containing localized tags
+     */
+    public function getTagTable(): string
+    {
+        return $this->tagTable;
+    }
+
+    /**
+     * Returns the unique translation constraint name
+     */
+    public function getTranslationUniqueConstraint(): string
+    {
+        return $this->translationUniqueConstraint;
+    }
+
+    /**
+     * Returns the translation prefix for validation errors
+     */
+    public function getValidationPrefix(): string
+    {
+        return $this->validationPrefix;
+    }
+
+    /**
+     * Returns the domain data class
+     *
+     * @return class-string
+     */
+    public function getDataClass(): string
+    {
+        return $this->dataClass;
+    }
+
+    /**
+     * Reports whether translations own the shared body columns
+     */
+    public function hasBodyColumns(): bool
+    {
+        return $this->hasBodyColumns;
+    }
+
+    /**
+     * Returns the root record scope for a specific content type
      *
      * @return array<string,int|string>
      */

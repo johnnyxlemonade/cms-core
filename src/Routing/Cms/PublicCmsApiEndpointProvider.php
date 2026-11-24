@@ -12,12 +12,12 @@ use Lemonade\Framework\Api\Endpoint\ApiEndpointRegistry;
 use Lemonade\Framework\Routing\ControllerAction;
 
 /**
- * Registruje verejny API endpoint pro stazeni CMS prilohy
+ * Registers the public CMS attachment API endpoint
  */
 final readonly class PublicCmsApiEndpointProvider implements ApiEndpointProviderInterface
 {
     /**
-     * Pripojuje canonical public attachment route do Framework API registry
+     * Adds the canonical attachment route to the Framework API registry
      */
     public function register(ApiEndpointRegistry $registry): void
     {

@@ -10,21 +10,21 @@ use ReflectionNamedType;
 use ReflectionProperty;
 
 /**
- * Prevede explicitne mapovana domenova data na hodnoty relacnich sloupcu
+ * Maps explicit domain attributes to relational column values
  *
  * @template T of object
  */
 final readonly class CmsDomainMapping
 {
     /**
-     * Nacte mapovani jedine explicitne predane domenove tridy
+     * Receives the one explicitly mapped domain class
      *
      * @param class-string<T> $dataClass
      */
     public function __construct(private string $dataClass) {}
 
     /**
-     * Vrati overene sloupce podle explicitne mapovanych domenovych vlastnosti
+     * Returns validated columns from explicitly mapped domain properties
      *
      * @return array{root:array<string,string>,localized:array<string,string>}
      */
@@ -46,20 +46,20 @@ final readonly class CmsDomainMapping
             $reserved = $scope === 'root'
                 ? ['id', 'created_by', 'updated_by', 'deleted_by', 'owner_id', ...array_keys(CmsContentInput::DISPLAY_DEFAULTS), 'deleted_at', 'created_at', 'updated_at']
                 : ['id', 'locale', 'title', 'page_title', 'summary', 'content', 'meta_description', 'publication_state', 'published_at', 'created_at', 'updated_at'];
-            if (preg_match('/^[a-z][a-z0-9_]*$/D', $mapping->column) !== 1
-                || in_array($mapping->column, $reserved, true)
-                || in_array($mapping->column, $columns[$scope], true)
+            if (preg_match('/^[a-z][a-z0-9_]*$/D', $mapping->getColumn()) !== 1
+                || in_array($mapping->getColumn(), $reserved, true)
+                || in_array($mapping->getColumn(), $columns[$scope], true)
             ) {
                 throw new InvalidArgumentException('CMS domain column mapping is invalid or duplicated.');
             }
-            $columns[$scope][$property->getName()] = $mapping->column;
+            $columns[$scope][$property->getName()] = $mapping->getColumn();
         }
 
         return $columns;
     }
 
     /**
-     * Vrati normalizovane hodnoty korenovych a lokalizovanych sloupcu
+     * Returns normalized root and translation column values
      *
      * @param T $data
      * @return array{root:array<string,int|string|null>,localized:array<string,int|string|null>}
@@ -75,12 +75,14 @@ final readonly class CmsDomainMapping
         foreach ($this->properties() as $property) {
             $scope = array_key_exists($property->getName(), $columns['root']) ? 'root' : 'localized';
             $mapping = $property->getAttributes($scope === 'root' ? CmsRoot::class : CmsLocalized::class)[0]->newInstance();
-            /** @var ReflectionNamedType $type */
             $type = $property->getType();
-            $values[$scope][$mapping->column] = $this->normalize(
+            if (!$type instanceof ReflectionNamedType) {
+                throw new InvalidArgumentException('CMS domain property type is invalid.');
+            }
+            $values[$scope][$mapping->getColumn()] = $this->normalize(
                 $property->getValue($data),
                 $type->getName(),
-                $mapping->decimalScale,
+                $mapping->getDecimalScale(),
             );
         }
 
@@ -88,7 +90,7 @@ final readonly class CmsDomainMapping
     }
 
     /**
-     * Porovna mapovane domenove hodnoty s nactenymi databazovymi radky
+     * Compares mapped domain values with stored database rows
      *
      * @param T $data
      * @param array<string,mixed> $root
@@ -108,15 +110,15 @@ final readonly class CmsDomainMapping
                 $changes[$scope] = true;
                 continue;
             }
-            if (!array_key_exists($mapping->column, $row)) {
+            if (!array_key_exists($mapping->getColumn(), $row)) {
                 throw new InvalidArgumentException('CMS domain column is missing from the database row.');
             }
             $type = $property->getType();
             if (!$type instanceof ReflectionNamedType) {
                 throw new InvalidArgumentException('CMS domain property type is invalid.');
             }
-            $stored = $this->normalize($row[$mapping->column], $type->getName(), $mapping->decimalScale);
-            if ($values[$scope][$mapping->column] !== $stored) {
+            $stored = $this->normalize($row[$mapping->getColumn()], $type->getName(), $mapping->getDecimalScale());
+            if ($values[$scope][$mapping->getColumn()] !== $stored) {
                 $changes[$scope] = true;
             }
         }
@@ -125,7 +127,7 @@ final readonly class CmsDomainMapping
     }
 
     /**
-     * Zachova kontrolu verejnych vlastnosti a zahrne explicitne mapovane neverejne
+     * Includes public properties and explicitly mapped private properties
      *
      * @return list<ReflectionProperty>
      */
@@ -140,7 +142,7 @@ final readonly class CmsDomainMapping
     }
 
     /**
-     * Sjednoti databazovou a PHP reprezentaci bez pouziti float
+     * Normalizes database and PHP values without floating point conversion
      */
     private function normalize(mixed $value, string $type, ?int $decimalScale): int|string|null
     {

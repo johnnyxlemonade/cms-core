@@ -7,17 +7,17 @@ namespace Lemonade\Cms\Routing\Cms;
 use Lemonade\Cms\Routing\Locale\PublicLocaleResolution;
 
 /**
- * Sklada lokalizovane verejne URL kanonickych CMS cest
+ * Builds localized public URLs from canonical CMS paths
  */
-final class PublicCmsUrlBuilder
+final readonly class PublicCmsUrlBuilder
 {
     /**
-     * Slozi verejnou URL s prefixem pouze pro nevychozi lokalizaci z request resolution
+     * Prefixes the path only for a nondefault locale
      */
     public function build(PublicLocaleResolution $resolution, string $locale, string $path): string
     {
         $path = trim($path, '/');
-        $prefix = $locale === $resolution->defaultLocale() ? '' : '/' . $locale;
+        $prefix = $locale === $resolution->getDefaultLocale() ? '' : '/' . $locale;
 
         return $prefix . ($path === '' ? '/' : '/' . $path);
     }

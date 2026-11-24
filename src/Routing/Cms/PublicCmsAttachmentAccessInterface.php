@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Lemonade\Cms\Routing\Cms;
 
 /**
- * Overuje verejnou dostupnost CMS entity vlastnici attachmentu
+ * Checks public availability of the CMS entity owning an attachment
  */
 interface PublicCmsAttachmentAccessInterface
 {
     /**
-     * Urcuje zda je entita verejna alespon v jedne enabled lokalizaci
+     * Reports whether an entity is public in at least one enabled locale
      */
     public function isPublicAttachmentOwner(int $entityId): bool;
 }

@@ -8,18 +8,19 @@ use Lemonade\Cms\Routing\Locale\PublicLocaleResolution;
 use Lemonade\Cms\Routing\Module\PublicModuleStateResolverInterface;
 use Lemonade\Framework\Container\ContainerInterface;
 use Lemonade\Framework\Http\Exception\NotFoundHttpException;
+use Lemonade\Framework\Http\HttpStatus;
 use Lemonade\Framework\View\ViewRendererInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * Preklada verejnou CMS cestu na handler aktivniho modulu
+ * Resolves a public CMS path to its active module handler
  */
 final readonly class PublicCmsRouteResolver
 {
     /**
-     * Nastavuje locale, canonical routy a prispene handlery modulu
+     * Receives locale resolution, canonical routes and module handlers
      */
     public function __construct(
         private PublicLocaleResolution             $locale,
@@ -33,39 +34,39 @@ final readonly class PublicCmsRouteResolver
     ) {}
 
     /**
-     * Vrati redirect, odpoved handleru nebo not found pro verejnou cestu
+     * Returns a redirect, handler response or not found result
      */
     public function resolve(): ResponseInterface
     {
         $locale = $this->locale;
-        $redirectTo = $locale->redirectTo();
+        $redirectTo = $locale->getRedirectTo();
         if ($redirectTo !== null) {
             $queryString = $this->request->getUri()->getQuery();
             $location = $queryString === '' ? $redirectTo : $redirectTo . '?' . $queryString;
 
-            return $this->responses->createResponse(301)->withHeader('Location', $location);
+            return $this->responses->createResponse(HttpStatus::MOVED_PERMANENTLY->value)->withHeader('Location', $location);
         }
-        $routeLocale = $locale->locale();
-        $routePath = $locale->path();
+        $routeLocale = $locale->getLocale();
+        $routePath = $locale->getPath();
         if ($routeLocale === null || $routePath === null || $routePath === '') {
             return $this->notFound();
         }
 
         $route = $this->routes->find($routeLocale, $routePath);
-        if ($route === null || !$this->modules->isDiscoveredInstalledAndEnabled($route->moduleCode())) {
+        if ($route === null || !$this->modules->isDiscoveredInstalledAndEnabled($route->getModuleCode())) {
             return $this->notFound();
         }
 
-        $handler = $this->handlers->handlerFor($route->moduleCode(), $this->container);
+        $handler = $this->handlers->handlerFor($route->getModuleCode(), $this->container);
         if ($handler === null) {
             return $this->notFound();
         }
 
-        return $handler->handle($route->entityId(), $locale, $route, $this->views) ?? $this->notFound();
+        return $handler->handle($route->getEntityId(), $locale, $route, $this->views) ?? $this->notFound();
     }
 
     /**
-     * Vytvori odpoved pro neplatnou nebo nedostupnou CMS routu
+     * Creates a response for an invalid or unavailable CMS route
      */
     private function notFound(): never
     {

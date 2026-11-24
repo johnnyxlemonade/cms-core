@@ -24,6 +24,9 @@ use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 
+/**
+ * Verifies public CMS route resolution and request scoped handlers
+ */
 final class PublicCmsRouteResolverTest extends TestCase
 {
     public function testCsWithoutPrefixUsesTheDefaultLocale(): void
@@ -32,8 +35,8 @@ final class PublicCmsRouteResolverTest extends TestCase
 
         $resolution = $resolver->resolve();
 
-        self::assertSame('cs', $resolution->locale());
-        self::assertSame('x', $resolution->path());
+        self::assertSame('cs', $resolution->getLocale());
+        self::assertSame('x', $resolution->getPath());
     }
 
     public function testExplicitCsPrefixRedirectsToTheUnprefixedUrl(): void
@@ -58,8 +61,8 @@ final class PublicCmsRouteResolverTest extends TestCase
 
         $resolution = $resolver->resolve();
 
-        self::assertSame('en', $resolution->locale());
-        self::assertSame('x', $resolution->path());
+        self::assertSame('en', $resolution->getLocale());
+        self::assertSame('x', $resolution->getPath());
     }
 
     public function testUnknownPathReturnsNotFound(): void
@@ -106,7 +109,7 @@ final class PublicCmsRouteResolverTest extends TestCase
     }
 
     /**
-     * Overuje, ze lazy handler zustava request scoped a registry jej necachuje
+     * Verifies lazy handlers remain request scoped and uncached
      */
     public function testHandlerFactoryUsesTheActiveRequestScope(): void
     {
@@ -143,7 +146,7 @@ final class PublicCmsRouteResolverTest extends TestCase
     }
 
     /**
-     * Overuje, ze request-scoped resolver nacte snapshot jen jednou
+     * Verifies request scoped resolution loads one locale snapshot
      */
     public function testMemoizesTheCurrentRequestResolution(): void
     {
@@ -178,6 +181,9 @@ final class PublicCmsRouteResolverTest extends TestCase
     }
 }
 
+/**
+ * Provides a fixed public locale snapshot for route tests
+ */
 final class FakeLocaleRegistry implements PublicLocaleRegistryInterface
 {
     public int $snapshotCalls = 0;
@@ -194,16 +200,27 @@ final class FakeLocaleRegistry implements PublicLocaleRegistryInterface
     }
 }
 
+/**
+ * Finds predefined CMS routes for resolver tests
+ */
 final class FakeRoutes implements CmsRouteRepositoryInterface
 {
-    /** @var array<string, CmsRoute> */
+    /**
+     * Routes indexed by locale and canonical path
+     *
+     * @var array<string, CmsRoute>
+     */
     private array $routes = [];
 
-    /** @param list<CmsRoute> $routes */
+    /**
+     * Receives predefined canonical routes
+     *
+     * @param list<CmsRoute> $routes
+     */
     public function __construct(array $routes = [])
     {
         foreach ($routes as $route) {
-            $this->routes[$route->locale() . ':' . $route->path()] = $route;
+            $this->routes[$route->getLocale() . ':' . $route->getPath()] = $route;
         }
     }
 
@@ -213,9 +230,16 @@ final class FakeRoutes implements CmsRouteRepositoryInterface
     }
 }
 
+/**
+ * Reports a fixed set of enabled CMS modules
+ */
 final class FakeModules implements PublicModuleStateResolverInterface
 {
-    /** @param list<string> $enabled */
+    /**
+     * Receives enabled module codes
+     *
+     * @param list<string> $enabled
+     */
     public function __construct(private readonly array $enabled) {}
 
     public function isDiscoveredInstalledAndEnabled(string $moduleCode): bool
@@ -224,9 +248,16 @@ final class FakeModules implements PublicModuleStateResolverInterface
     }
 }
 
+/**
+ * Records the resolved public route passed to a handler
+ */
 final class FakeHandler implements PublicCmsRouteHandlerInterface
 {
-    /** @var array{int, string, string, string}|null */
+    /**
+     * Last route passed to the handler
+     *
+     * @var array{int, string, string, string}|null
+     */
     public ?array $received = null;
 
     public function handle(
@@ -235,12 +266,15 @@ final class FakeHandler implements PublicCmsRouteHandlerInterface
         CmsRoute $route,
         ViewRendererInterface $views,
     ): ResponseInterface {
-        $this->received = [$entityId, $resolution->defaultLocale(), (string) $resolution->locale(), $route->path()];
+        $this->received = [$entityId, $resolution->getDefaultLocale(), (string) $resolution->getLocale(), $route->getPath()];
 
         return (new Psr17Factory())->createResponse(200);
     }
 }
 
+/**
+ * Records creation of a request scoped test handler
+ */
 final class ScopedFakeHandler implements PublicCmsRouteHandlerInterface
 {
     public function handle(
@@ -253,6 +287,9 @@ final class ScopedFakeHandler implements PublicCmsRouteHandlerInterface
     }
 }
 
+/**
+ * Provides a minimal view renderer for route tests
+ */
 final class FakeViews implements ViewRendererInterface
 {
     public function render(string $template, array $data = [], int $status = 200): ResponseInterface

@@ -7,14 +7,16 @@ namespace Lemonade\Cms\Routing\Cms;
 use RuntimeException;
 
 /**
- * Vybira prvni volnou canonical cestu ze slugu v ramci jednoho locale
+ * Chooses the first available canonical path within one locale
  */
-final class CmsRouteCandidateResolver
+final readonly class CmsRouteCandidateResolver
 {
     private const MAXIMUM_SLUG_LENGTH = 255;
 
+    private const MAXIMUM_CANDIDATES = 10000;
+
     /**
-     * Najde prvni volny slug se suffixem od -1 a ignoruje vlastni route targetu
+     * Finds an available slug while ignoring the target's own route
      *
      * @param list<CmsRoute> $routes
      */
@@ -29,12 +31,12 @@ final class CmsRouteCandidateResolver
     ): CmsRouteReservation {
         $occupiedPaths = [];
         foreach ($routes as $route) {
-            if ($route->moduleCode() === $moduleCode && $route->entityId() === $entityId) {
+            if ($route->getModuleCode() === $moduleCode && $route->getEntityId() === $entityId) {
                 continue;
             }
-            $occupiedPaths[$route->path()] = true;
+            $occupiedPaths[$route->getPath()] = true;
         }
-        for ($suffix = 0; $suffix < 10000; $suffix++) {
+        for ($suffix = 0; $suffix < self::MAXIMUM_CANDIDATES; $suffix++) {
             $slug = $this->candidate($baseSlug, $suffix, $maximumSlugLength);
             $path = $pathPrefix === '' ? $slug : $pathPrefix . '/' . $slug;
             if (!isset($occupiedPaths[$path]) && !($isReserved !== null && $isReserved($path))) {
@@ -46,7 +48,7 @@ final class CmsRouteCandidateResolver
     }
 
     /**
-     * Sestavi base slug nebo jeho prvni cislovany suffix v ramci databazove delky
+     * Builds a slug with an optional numbered suffix within the length limit
      */
     private function candidate(string $baseSlug, int $suffix, int $maximumSlugLength): string
     {

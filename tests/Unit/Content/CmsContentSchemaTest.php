@@ -16,7 +16,7 @@ use Lemonade\Framework\Database\Schema\SchemaCompiler;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Overuje spolecne fresh-install schema CMS obsahu
+ * Verifies the shared CMS schema on a fresh installation
  */
 final class CmsContentSchemaTest extends TestCase
 {
@@ -54,5 +54,30 @@ final class CmsContentSchemaTest extends TestCase
         self::assertStringContainsString('`publication_state`', $statements[1]);
         self::assertStringContainsString('UNIQUE KEY `uq_cms_example_translation_locale` (`item_id`, `locale`)', $statements[1]);
         self::assertStringContainsString('UNIQUE KEY `uq_cms_example_translation_tag_name` (`translation_id`, `name`)', $statements[2]);
+    }
+
+    /**
+     * Verifies that Content Types can omit unused body columns on a new installation
+     */
+    public function testTranslationCanOmitSystemBodyColumns(): void
+    {
+        $statements = [];
+        $driver = self::createStub(DatabaseDriverInterface::class);
+        $driver->method('query')->willReturnCallback(static function (string $statement) use (&$statements): bool {
+            $statements[] = $statement;
+            return true;
+        });
+        $config = DatabaseConfig::fromArray(['driver' => 'mysql']);
+        $escaper = new MysqlIdentifierEscaper('');
+        $schema = new Schema(new SchemaCompiler(new MysqlSchemaGrammar(new MysqlSqlEscaper($escaper), $config)), $driver);
+
+        $schema->create('cms_without_body_translation', static function (TableBlueprint $table): void {
+            CmsContentSchema::translation($table, 'cms_without_body', 'item_id', hasBodyColumns: false);
+        });
+
+        self::assertCount(1, $statements);
+        self::assertStringNotContainsString('`summary`', $statements[0]);
+        self::assertStringNotContainsString('`content`', $statements[0]);
+        self::assertStringContainsString('`title`', $statements[0]);
     }
 }

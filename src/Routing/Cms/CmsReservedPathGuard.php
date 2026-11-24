@@ -10,17 +10,21 @@ use Lemonade\Framework\Routing\Router;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * Chrani systemove a hostem registrovane cesty pred CMS fallbackem
+ * Protects system and host routes from the CMS fallback
  */
 final readonly class CmsReservedPathGuard
 {
     private const CMS_FALLBACK_ROUTE = 'frontend.cms-route';
 
-    /** @var list<string> */
+    /**
+     * System path segments reserved before host routing
+     *
+     * @var list<string>
+     */
     private const SYSTEM_SEGMENTS = ['api', 'assets', 'static'];
 
     /**
-     * Nastavuje skutecny host router a aktualni request pro bezstavovou kontrolu GET cesty
+     * Receives the host router and current request for stateless GET checks
      */
     public function __construct(
         private Router $router,
@@ -29,7 +33,7 @@ final readonly class CmsReservedPathGuard
     ) {}
 
     /**
-     * Rozhodne, zda cestu vlastni host nebo systemovy namespace
+     * Reports whether the host or a system namespace owns a path
      */
     public function isReserved(string $path): bool
     {

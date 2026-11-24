@@ -17,12 +17,12 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 
 /**
- * Overuje zachovani hostem rizeneho verejneho attachment downloadu
+ * Verifies host-controlled public attachment downloads
  */
 final class PublicCmsAttachmentDownloadControllerTest extends TestCase
 {
     /**
-     * Overuje predani file identity registrovanemu host handleru
+     * Verifies file identity is passed to the registered host handler
      */
     public function testItDispatchesPublicAttachmentToConfiguredHostHandler(): void
     {
@@ -38,7 +38,7 @@ final class PublicCmsAttachmentDownloadControllerTest extends TestCase
     }
 
     /**
-     * Overuje bezpecnou 404 pokud host download handler chybi
+     * Verifies a safe not found response without a host handler
      */
     public function testItReturns404WithoutHostHandler(): void
     {
@@ -49,7 +49,7 @@ final class PublicCmsAttachmentDownloadControllerTest extends TestCase
     }
 
     /**
-     * Vytvori controller se skutecnym request-scoped containerem a response factory
+     * Creates a controller with request scoped container and response factory
      */
     private function controller(PublicCmsAttachmentDownloadHandlerRegistry $registry): PublicCmsAttachmentDownloadController
     {
@@ -64,12 +64,12 @@ final class PublicCmsAttachmentDownloadControllerTest extends TestCase
 }
 
 /**
- * Vraci verejnou attachment odpoved pro prijatou file identity
+ * Returns a public attachment response for a file identity
  */
 final readonly class RecordingAttachmentDownloadHandler implements PublicCmsAttachmentDownloadHandlerInterface
 {
     /**
-     * Vraci file identity v testovaci HTTP odpovedi
+     * Returns the file identity in a test HTTP response
      */
     public function downloadAttachment(int $fileId): ResponseInterface
     {

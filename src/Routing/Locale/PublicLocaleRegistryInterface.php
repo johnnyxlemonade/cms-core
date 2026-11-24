@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Lemonade\Cms\Routing\Locale;
 
 /**
- * Definuje registr verejnych lokalizaci
+ * Defines the public locale registry contract
  */
 interface PublicLocaleRegistryInterface
 {
     /**
-     * Vrati atomicky snapshot jazyku pro jedno verejne locale resolution
+     * Returns an atomic language snapshot for one public locale resolution
      */
     public function snapshot(): PublicLocaleSnapshot;
 }

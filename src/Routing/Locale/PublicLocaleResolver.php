@@ -7,14 +7,14 @@ namespace Lemonade\Cms\Routing\Locale;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * Urcuje lokalizaci a canonical podobu verejne CMS cesty
+ * Resolves the locale and canonical form of a public CMS path
  */
 final class PublicLocaleResolver
 {
     private ?PublicLocaleResolution $resolution = null;
 
     /**
-     * Nastavuje registry znamych a aktivnich lokalizaci
+     * Receives the registry of known and enabled locales
      */
     public function __construct(
         private readonly PublicLocaleRegistryInterface $locales,
@@ -22,7 +22,7 @@ final class PublicLocaleResolver
     ) {}
 
     /**
-     * Rozhodne mezi routou, canonical redirectem a not found
+     * Chooses a route, canonical redirect or not found result
      */
     public function resolve(): PublicLocaleResolution
     {
@@ -30,7 +30,7 @@ final class PublicLocaleResolver
     }
 
     /**
-     * Rozhodne canonical stav z aktualni cesty a jednoho atomickeho snapshotu
+     * Resolves canonical state from the current path and one atomic snapshot
      */
     private function resolveRequestPath(string $requestPath): PublicLocaleResolution
     {
@@ -38,7 +38,7 @@ final class PublicLocaleResolver
         $path = trim($requestPath, '/');
         $segments = $path === '' ? [] : explode('/', $path);
         $first = $segments[0] ?? null;
-        $default = $snapshot->defaultLocale();
+        $default = $snapshot->getDefaultLocale();
 
         if ($first === $default) {
             array_shift($segments);

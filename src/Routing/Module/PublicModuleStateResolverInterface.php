@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Lemonade\Cms\Routing\Module;
 
 /**
- * Definuje zdroj verejneho stavu modulu
+ * Defines the public module state resolver contract
  */
 interface PublicModuleStateResolverInterface
 {
     /**
-     * Overi, zda je modul objeveny, nainstalovany a aktivni
+     * Checks whether a module is discovered, installed and enabled
      */
     public function isDiscoveredInstalledAndEnabled(string $moduleCode): bool;
 }

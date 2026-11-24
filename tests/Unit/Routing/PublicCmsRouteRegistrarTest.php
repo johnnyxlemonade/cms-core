@@ -13,6 +13,9 @@ use Lemonade\Framework\Routing\Router;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Verifies that the CMS fallback follows concrete host routes
+ */
 final class PublicCmsRouteRegistrarTest extends TestCase
 {
     public function testItRegistersTheCmsFallbackAfterConcreteRoutes(): void

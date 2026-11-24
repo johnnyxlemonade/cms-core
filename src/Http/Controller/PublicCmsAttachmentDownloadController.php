@@ -6,16 +6,17 @@ namespace Lemonade\Cms\Http\Controller;
 
 use Lemonade\Cms\Routing\Cms\PublicCmsAttachmentDownloadHandlerRegistry;
 use Lemonade\Framework\Container\ContainerInterface;
+use Lemonade\Framework\Http\HttpStatus;
 use Lemonade\Framework\Http\Response\Responses;
 use Psr\Http\Message\ResponseInterface;
 
 /**
- * Dispatchuje public attachment download do host request scope
+ * Dispatches public attachment downloads into the host request scope
  */
 final readonly class PublicCmsAttachmentDownloadController
 {
     /**
-     * Nastavuje host handler factory, request scope a 404 odpoved
+     * Receives the host handler factory, request scope and not found response
      */
     public function __construct(
         private PublicCmsAttachmentDownloadHandlerRegistry $handlers,
@@ -24,10 +25,11 @@ final readonly class PublicCmsAttachmentDownloadController
     ) {}
 
     /**
-     * Odesle hostem autorizovany attachment nebo bezpecne skryje jeho existenci
+     * Downloads a host-authorized attachment or hides its existence
      */
     public function download(int $fileId): ResponseInterface
     {
-        return $this->handlers->handler($this->container)?->downloadAttachment($fileId) ?? $this->responses->text('', 404);
+        return $this->handlers->handler($this->container)?->downloadAttachment($fileId)
+            ?? $this->responses->text('', HttpStatus::NOT_FOUND->value);
     }
 }

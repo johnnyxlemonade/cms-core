@@ -7,12 +7,12 @@ namespace Lemonade\Cms\Routing\Cms;
 use Psr\Http\Message\ResponseInterface;
 
 /**
- * Definuje hostem poskytovany download verejneho CMS attachmentu
+ * Defines the host-provided public CMS attachment download
  */
 interface PublicCmsAttachmentDownloadHandlerInterface
 {
     /**
-     * Odesle attachment nebo vrati bezpecnou verejnou 404 odpoved
+     * Downloads an attachment or returns a safe public not found response
      */
     public function downloadAttachment(int $fileId): ResponseInterface;
 }

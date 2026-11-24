@@ -17,12 +17,12 @@ use Lemonade\Framework\Container\Container;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Overuje registraci reusable CMS runtime bez host adapteru
+ * Verifies reusable CMS runtime registration without a host adapter
  */
 final class CmsCoreServiceProviderTest extends TestCase
 {
     /**
-     * Overuje registraci CMS runtime bez host rout a adapteru
+     * Verifies CMS runtime registration without host routes or adapters
      */
     public function testItRegistersReusableCmsRuntimeWithoutHostPortBindings(): void
     {

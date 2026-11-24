@@ -13,12 +13,12 @@ use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Overuje centralni ochranu systemovych a host rout
+ * Verifies protection of system and host routes
  */
 final class CmsReservedPathGuardTest extends TestCase
 {
     /**
-     * Rozlisuje presny prvni segment od podobneho bezneho slova
+     * Distinguishes an exact first segment from a similar word
      */
     public function testProtectsSystemSegmentsExactly(): void
     {
@@ -36,7 +36,7 @@ final class CmsReservedPathGuardTest extends TestCase
     }
 
     /**
-     * Pouziva skutecny host router pro Admin base path i explicitni frontend route
+     * Uses the host router for Admin base paths and frontend routes
      */
     public function testProtectsRoutesOwnedByHost(): void
     {
@@ -71,12 +71,12 @@ final class CmsReservedPathGuardTest extends TestCase
 }
 
 /**
- * Poskytuje stabilni locale snapshot pro test ochrany canonical cest
+ * Provides a stable locale snapshot for reserved path tests
  */
 final readonly class ReservedPathLocaleRegistry implements PublicLocaleRegistryInterface
 {
     /**
-     * Vrati vychozi cestinu a znamou anglictinu
+     * Returns default Czech and known English locales
      */
     public function snapshot(): PublicLocaleSnapshot
     {

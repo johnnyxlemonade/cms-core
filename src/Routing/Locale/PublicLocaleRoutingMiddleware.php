@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lemonade\Cms\Routing\Locale;
 
 use Lemonade\Framework\Http\Exception\NotFoundHttpException;
+use Lemonade\Framework\Http\HttpStatus;
 use Lemonade\Framework\Routing\RouteRequestAttributes;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -13,14 +14,14 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**
- * Uplatni public locale resolution pred matchingem verejnych content rout
+ * Applies public locale resolution before matching content routes
  */
 final readonly class PublicLocaleRoutingMiddleware implements MiddlewareInterface
 {
-    public const BYPASS_ATTRIBUTE = 'lemonade.public_locale_bypass';
+    public const string BYPASS_ATTRIBUTE = 'lemonade.public_locale_bypass';
 
     /**
-     * Nastavuje lazy locale resolver a framework response factory
+     * Receives the lazy locale resolver and Framework response factory
      */
     public function __construct(
         private PublicLocaleResolver $resolver,
@@ -28,7 +29,7 @@ final readonly class PublicLocaleRoutingMiddleware implements MiddlewareInterfac
     ) {}
 
     /**
-     * Redirectuje canonical cestu nebo preda normalizovanou dispatch cestu Routeru
+     * Redirects to the canonical path or passes a normalized path to the router
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -40,23 +41,23 @@ final readonly class PublicLocaleRoutingMiddleware implements MiddlewareInterfac
         }
 
         $resolution = $this->resolver->resolve();
-        if ($this->isTechnicalApiPath($resolution->path()) || $this->isTechnicalApiPath($resolution->redirectTo())) {
-            return $this->responses->createResponse(404);
+        if ($this->isTechnicalApiPath($resolution->getPath()) || $this->isTechnicalApiPath($resolution->getRedirectTo())) {
+            return $this->responses->createResponse(HttpStatus::NOT_FOUND->value);
         }
-        $redirectTo = $resolution->redirectTo();
+        $redirectTo = $resolution->getRedirectTo();
         if ($redirectTo !== null) {
             $query = $request->getUri()->getQuery();
 
             return $this->responses
-                ->createResponse(301)
+                ->createResponse(HttpStatus::MOVED_PERMANENTLY->value)
                 ->withHeader('Location', $query === '' ? $redirectTo : $redirectTo . '?' . $query);
         }
-        $locale = $resolution->locale();
-        $path = $resolution->path();
+        $locale = $resolution->getLocale();
+        $path = $resolution->getPath();
         if ($locale === null || $path === null) {
             throw NotFoundHttpException::create();
         }
-        if ($locale === $resolution->defaultLocale()) {
+        if ($locale === $resolution->getDefaultLocale()) {
             return $handler->handle($request);
         }
 
@@ -67,7 +68,7 @@ final readonly class PublicLocaleRoutingMiddleware implements MiddlewareInterfac
     }
 
     /**
-     * Rozlisuje technicke API cesty od locale-aware verejneho obsahu
+     * Distinguishes technical API paths from locale-aware public content
      */
     private function isTechnicalApiPath(?string $path): bool
     {

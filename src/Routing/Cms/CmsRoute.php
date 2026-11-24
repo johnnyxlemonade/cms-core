@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Lemonade\Cms\Routing\Cms;
 
 /**
- * Popisuje kanonickou verejnou cestu entity modulu
+ * Represents the canonical public path of a module entity
  */
 final readonly class CmsRoute
 {
     /**
-     * Nastavuje identitu cilove entity a jeji lokalizovanou cestu
+     * Receives the target identity and localized path
      */
     public function __construct(
         private int $id,
@@ -21,41 +21,41 @@ final readonly class CmsRoute
     ) {}
 
     /**
-     * Vrati interní identifikator CMS routy
+     * Returns the internal CMS route identifier
      */
-    public function id(): int
+    public function getId(): int
     {
         return $this->id;
     }
 
     /**
-     * Vrati kod modulu vlastniciho cilovou entitu
+     * Returns the code of the module owning the target entity
      */
-    public function moduleCode(): string
+    public function getModuleCode(): string
     {
         return $this->moduleCode;
     }
 
     /**
-     * Vrati identifikator cilove entity modulu
+     * Returns the module target identifier
      */
-    public function entityId(): int
+    public function getEntityId(): int
     {
         return $this->entityId;
     }
 
     /**
-     * Vrati lokalizaci kanonicke cesty
+     * Returns the canonical path locale
      */
-    public function locale(): string
+    public function getLocale(): string
     {
         return $this->locale;
     }
 
     /**
-     * Vrati cestu bez uvodniho lomitka
+     * Returns the path without a leading slash
      */
-    public function path(): string
+    public function getPath(): string
     {
         return $this->path;
     }

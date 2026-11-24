@@ -7,14 +7,14 @@ namespace Lemonade\Cms\Content;
 use Lemonade\Framework\Database\Database;
 
 /**
- * Nacita nehierarchicky CMS obsah pro editor a administracni kontroly
+ * Reads nonhierarchical CMS content for editors and administrative checks
  */
 final readonly class CmsContentReadModel
 {
     private CmsContentQueries $queries;
 
     /**
-     * Nastavuje databazi a registrovanou definici modulu
+     * Receives the database and registered module definition
      */
     public function __construct(private Database $database, private CmsContentDefinition $definition)
     {
@@ -22,32 +22,32 @@ final readonly class CmsContentReadModel
     }
 
     /**
-     * Overi existenci nesmazane identity obsahu
+     * Checks whether a nondeleted content record exists
      */
     public function exists(int $id): bool
     {
-        return $this->queries->scope($this->database->table($this->definition->rootTable))->where('id', $id)->where('deleted_at', null)->exists();
+        return $this->queries->scope($this->database->table($this->definition->getRootTable()))->where('id', $id)->where('deleted_at', null)->exists();
     }
 
     /**
-     * Vrati vlastnika i pro soft-deleted zaznam
+     * Returns the owner, including for a soft deleted record
      */
     public function ownerId(int $id): ?int
     {
-        $row = $this->queries->scope($this->database->table($this->definition->rootTable))->select(['owner_id'])->where('id', $id)->first();
+        $row = $this->queries->scope($this->database->table($this->definition->getRootTable()))->select(['owner_id'])->where('id', $id)->first();
 
         return $row === null || $row['owner_id'] === null ? null : (int) $row['owner_id'];
     }
 
     /**
-     * Vrati globalni domenove hodnoty podle atributoveho mapovani
+     * Returns root domain values from attribute mappings
      *
      * @return array<string,mixed>|null
      */
     public function metadata(int $id): ?array
     {
-        $columns = (new CmsDomainMapping($this->definition->dataClass))->columns();
-        $row = $this->queries->scope($this->database->table($this->definition->rootTable))->select(['id', ...array_keys(CmsContentInput::DISPLAY_DEFAULTS), ...array_values($columns['root'])])
+        $columns = (new CmsDomainMapping($this->definition->getDataClass()))->columns();
+        $row = $this->queries->scope($this->database->table($this->definition->getRootTable()))->select(['id', ...array_keys(CmsContentInput::DISPLAY_DEFAULTS), ...array_values($columns['root'])])
             ->where('id', $id)->where('deleted_at', null)->first();
         if ($row !== null) {
             unset($row['id']);
@@ -57,18 +57,18 @@ final readonly class CmsContentReadModel
     }
 
     /**
-     * Vrati ulozenou mutaci vcetne domenovych hodnot a canonical URL
+     * Returns a stored translation with domain values and canonical URL
      *
      * @return array<string,mixed>|null
      */
     public function translation(int $id, string $locale): ?array
     {
-        return $this->queries->translations()->where('t.' . $this->definition->translationForeignKey, $id)
+        return $this->queries->translations()->where('t.' . $this->definition->getTranslationForeignKey(), $id)
             ->where('t.locale', $locale)->first();
     }
 
     /**
-     * Vrati stav a datum publikace ulozene mutace
+     * Returns the stored publication state and timestamp
      *
      * @return array<string,mixed>|null
      */
@@ -77,12 +77,12 @@ final readonly class CmsContentReadModel
         if ($this->definition->rootScope() !== [] && !$this->exists($id)) {
             return null;
         }
-        return $this->database->table($this->definition->translationTable)->select(['publication_state', 'published_at'])
-            ->where($this->definition->translationForeignKey, $id)->where('locale', $locale)->first();
+        return $this->database->table($this->definition->getTranslationTable())->select(['publication_state', 'published_at'])
+            ->where($this->definition->getTranslationForeignKey(), $id)->where('locale', $locale)->first();
     }
 
     /**
-     * Nacte editor, vsechny mutace, canonical cesty a serazene stitky
+     * Loads editor data, translations, canonical routes and ordered tags
      *
      * @return array<string,mixed>|null
      */
@@ -92,12 +92,12 @@ final readonly class CmsContentReadModel
         if ($root === null) {
             return null;
         }
-        $translations = $this->queries->translations()->where('t.' . $this->definition->translationForeignKey, $id)
+        $translations = $this->queries->translations()->where('t.' . $this->definition->getTranslationForeignKey(), $id)
             ->orderBy('t.locale', 'ASC')->getArray();
-        $tags = $this->database->table($this->definition->tagTable . ' tag')
+        $tags = $this->database->table($this->definition->getTagTable() . ' tag')
             ->select(['tag.translation_id', 'tag.name'])
-            ->joinOn($this->definition->translationTable . ' t', 't.id', '=', 'tag.translation_id')
-            ->where('t.' . $this->definition->translationForeignKey, $id)
+            ->joinOn($this->definition->getTranslationTable() . ' t', 't.id', '=', 'tag.translation_id')
+            ->where('t.' . $this->definition->getTranslationForeignKey(), $id)
             ->orderBy('tag.sort_order', 'ASC')->orderBy('tag.id', 'ASC')->getArray();
         $byTranslation = [];
         foreach ($tags as $tag) {
@@ -105,7 +105,7 @@ final readonly class CmsContentReadModel
         }
         foreach ($translations as &$translation) {
             $translation['tags'] = $byTranslation[(int) $translation['id']] ?? [];
-            unset($translation['id'], $translation[$this->definition->translationForeignKey]);
+            unset($translation['id'], $translation[$this->definition->getTranslationForeignKey()]);
         }
         unset($translation);
         $root['translations'] = $translations;
@@ -114,22 +114,24 @@ final readonly class CmsContentReadModel
     }
 
     /**
-     * Vrati serazene unikatni nazvy stitku pro zvolenou content lokalizaci
+     * Returns ordered unique tag names for a content locale
      *
      * @return list<string>
      */
     public function tagNamesForLocale(string $locale): array
     {
-        /** @var list<array{name:string}> $tags */
-        $tags = $this->queries->scope($this->database->table($this->definition->tagTable . ' tag'), 'scope_root')
+        /**
+         * @var list<array{name:string}> $tags
+         */
+        $tags = $this->queries->scope($this->database->table($this->definition->getTagTable() . ' tag'), 'scope_root')
             ->select(['tag.name'])
             ->joinOn(
-                $this->definition->translationTable . ' translation',
+                $this->definition->getTranslationTable() . ' translation',
                 'translation.id',
                 '=',
                 'tag.translation_id',
             )
-            ->joinOn($this->definition->rootTable . ' scope_root', 'scope_root.id', '=', 'translation.' . $this->definition->translationForeignKey)
+            ->joinOn($this->definition->getRootTable() . ' scope_root', 'scope_root.id', '=', 'translation.' . $this->definition->getTranslationForeignKey())
             ->where('translation.locale', $locale)
             ->groupBy('tag.name')
             ->orderBy('tag.name', 'ASC')
@@ -142,7 +144,7 @@ final readonly class CmsContentReadModel
     }
 
     /**
-     * Vrati locale dostupne pro editor vcetne ulozenych neaktivnich mutaci
+     * Returns editor locales including stored inactive translations
      *
      * @return list<array{code:string,name:string,enabled:int,is_default:int,has_translation:int}>
      */
@@ -151,7 +153,9 @@ final readonly class CmsContentReadModel
         if ($this->definition->rootScope() !== [] && !$this->exists($articleId)) {
             return [];
         }
-        /** @var list<array{code:string,name:string,enabled:int,is_default:int,has_translation:int}> $locales */
+        /**
+         * @var list<array{code:string,name:string,enabled:int,is_default:int,has_translation:int}> $locales
+         */
         $locales = $this->database->table('system_language language')
             ->select([
                 'language.code',
@@ -161,8 +165,8 @@ final readonly class CmsContentReadModel
             ])
             ->selectRaw('CASE WHEN translation.id IS NULL THEN 0 ELSE 1 END AS has_translation')
             ->joinRaw(
-                table: $this->definition->translationTable . ' translation',
-                condition: 'translation.locale = language.code AND translation.' . $this->definition->translationForeignKey . ' = ?',
+                table: $this->definition->getTranslationTable() . ' translation',
+                condition: 'translation.locale = language.code AND translation.' . $this->definition->getTranslationForeignKey() . ' = ?',
                 bindings: [$articleId],
                 type: 'LEFT',
             )
@@ -175,7 +179,7 @@ final readonly class CmsContentReadModel
     }
 
     /**
-     * Vrati aktivni locale a deaktivovane locale s existujici CMS mutaci
+     * Returns active locales and inactive locales with stored CMS translations
      *
      * @return list<array{code:string,name:string}>
      */
@@ -185,7 +189,7 @@ final readonly class CmsContentReadModel
             ->select(['language.code', 'language.name']);
         if ($this->definition->rootScope() === []) {
             $query = $query->joinOn(
-                $this->definition->translationTable . ' translation',
+                $this->definition->getTranslationTable() . ' translation',
                 'translation.locale',
                 '=',
                 'language.code',
@@ -203,20 +207,22 @@ final readonly class CmsContentReadModel
                 $bindings[] = $value;
             }
             $query = $query->whereRaw(
-                'language.enabled = 1 OR EXISTS (SELECT 1 FROM ' . $this->definition->translationTable . ' translation'
-                . ' JOIN ' . $this->definition->rootTable . ' scope_root ON scope_root.id = translation.' . $this->definition->translationForeignKey
+                'language.enabled = 1 OR EXISTS (SELECT 1 FROM ' . $this->definition->getTranslationTable() . ' translation'
+                . ' JOIN ' . $this->definition->getRootTable() . ' scope_root ON scope_root.id = translation.' . $this->definition->getTranslationForeignKey()
                 . ' WHERE translation.locale = language.code' . $scope . ')',
                 $bindings,
             );
         }
-        /** @var list<array{code:string,name:string}> $locales */
+        /**
+         * @var list<array{code:string,name:string}> $locales
+         */
         $locales = $query->orderBy('language.sort_order', 'ASC')->orderBy('language.code', 'ASC')->getArray();
 
         return $locales;
     }
 
     /**
-     * Vrati enabled content locale pro taby editoru a deklarovany filter
+     * Returns enabled content locales for editor tabs and filters
      *
      * @return list<array<string,mixed>>
      */

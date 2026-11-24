@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Lemonade\Cms\Content;
 
 /**
- * Propojuje CMS lifecycle s transakcemi, auditem a lokalnimi uzivateli
+ * Connects CMS lifecycle to transactions, audit and local users
  */
 interface CmsContentRuntime
 {
     /**
-     * Provede mutaci a audit ve spolecne transakci
+     * Runs a mutation and its audit in one transaction
      *
      * @template T
      * @param callable(CmsContentEvents):T $mutation
@@ -19,12 +19,12 @@ interface CmsContentRuntime
     public function execute(int $actorUserId, callable $mutation): mixed;
 
     /**
-     * Rozhodne, zda lze zalozit novou mutaci pro zadany jazyk
+     * Reports whether a new translation may be created for a locale
      */
     public function isEnabledLocale(string $locale): bool;
 
     /**
-     * Rozhodne, zda lze uzivateli predat vlastnictvi
+     * Reports whether ownership may be transferred to a user
      */
     public function ownerExists(int $userId): bool;
 }

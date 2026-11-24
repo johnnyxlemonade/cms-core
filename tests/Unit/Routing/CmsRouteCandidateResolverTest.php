@@ -9,33 +9,33 @@ use Lemonade\Cms\Routing\Cms\CmsRouteCandidateResolver;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Overuje canonical suffix kandidaty bez zavislosti na databazove reservation vrstve
+ * Verifies canonical suffix candidates without database reservations
  */
 final class CmsRouteCandidateResolverTest extends TestCase
 {
     /**
-     * Vybere base slug a dalsi cislovane suffixy od -1 podle obsazenych rout
+     * Chooses the base slug and numbered suffixes from occupied routes
      */
     public function testResolvesFirstAvailableSuffix(): void
     {
         $resolver = new CmsRouteCandidateResolver();
 
-        self::assertSame('test', $resolver->resolve('cms.news', 10, 'test', [])->slug());
+        self::assertSame('test', $resolver->resolve('cms.news', 10, 'test', [])->getSlug());
         self::assertSame('test-1', $resolver->resolve('cms.news', 11, 'test', [
             new CmsRoute(1, 'cms.news', 10, 'cs', 'test'),
-        ])->slug());
+        ])->getSlug());
         self::assertSame('test-1', $resolver->resolve('cms.news', 12, 'test', [
             new CmsRoute(1, 'cms.news', 10, 'cs', 'test'),
             new CmsRoute(2, 'cms.news', 11, 'cs', 'test-2'),
-        ])->slug());
+        ])->getSlug());
         self::assertSame('test-2', $resolver->resolve('cms.news', 12, 'test', [
             new CmsRoute(1, 'cms.news', 10, 'cs', 'test'),
             new CmsRoute(2, 'cms.news', 11, 'cs', 'test-1'),
-        ])->slug());
+        ])->getSlug());
     }
 
     /**
-     * Ponechava soft-deleted projection jako rezervaci a ignoruje pouze vlastni route
+     * Keeps deleted routes reserved and ignores only the target's own route
      */
     public function testTreatsProjectedRoutesAsReservedExceptForItsOwnTarget(): void
     {
@@ -47,12 +47,12 @@ final class CmsRouteCandidateResolverTest extends TestCase
             new CmsRoute(3, 'cms.news', 10, 'cs', 'test-2'),
         ]);
 
-        self::assertSame('test-2', $reservation->slug());
-        self::assertSame('test-2', $reservation->path());
+        self::assertSame('test-2', $reservation->getSlug());
+        self::assertSame('test-2', $reservation->getPath());
     }
 
     /**
-     * Zachovava databazovy limit slugu i pri pripojeni cislovaneho suffixu
+     * Preserves the slug length limit after adding a numbered suffix
      */
     public function testReservesSpaceForSuffixWithinMaximumSlugLength(): void
     {
@@ -63,7 +63,7 @@ final class CmsRouteCandidateResolverTest extends TestCase
             new CmsRoute(1, 'cms.news', 10, 'cs', $baseSlug),
         ], maximumSlugLength: 180);
 
-        self::assertSame(180, strlen($reservation->slug()));
-        self::assertSame(str_repeat('a', 178) . '-1', $reservation->slug());
+        self::assertSame(180, strlen($reservation->getSlug()));
+        self::assertSame(str_repeat('a', 178) . '-1', $reservation->getSlug());
     }
 }

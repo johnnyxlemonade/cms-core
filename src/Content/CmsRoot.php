@@ -7,16 +7,32 @@ namespace Lemonade\Cms\Content;
 use Attribute;
 
 /**
- * Mapuje domenovou hodnotu na sloupec korenoveho zaznamu
+ * Maps a domain value to a root record column
  */
 #[Attribute(Attribute::TARGET_PROPERTY)]
 final readonly class CmsRoot
 {
     /**
-     * Nastavuje nazev sloupce a pripadnou presnost desetinne hodnoty
+     * Receives the column name and optional decimal precision
      */
     public function __construct(
-        public string $column,
-        public ?int $decimalScale = null,
+        private string $column,
+        private ?int $decimalScale = null,
     ) {}
+
+    /**
+     * Returns mapped root column
+     */
+    public function getColumn(): string
+    {
+        return $this->column;
+    }
+
+    /**
+     * Returns decimal precision when configured
+     */
+    public function getDecimalScale(): ?int
+    {
+        return $this->decimalScale;
+    }
 }

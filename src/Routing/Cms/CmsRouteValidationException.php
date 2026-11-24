@@ -7,6 +7,6 @@ namespace Lemonade\Cms\Routing\Cms;
 use RuntimeException;
 
 /**
- * Oznamuje odmitnutou canonical CMS cestu
+ * Reports a rejected canonical CMS path
  */
 final class CmsRouteValidationException extends RuntimeException {}

@@ -5,15 +5,15 @@
 [![PHPStan](https://img.shields.io/github/actions/workflow/status/johnnyxlemonade/cms-core/phpstan.yml?branch=main&label=PHPStan&logo=php&logoColor=white&labelColor=5b4baf)](https://github.com/johnnyxlemonade/cms-core/actions/workflows/phpstan.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 
-`johnnyxlemonade/cms-core` provides reusable public CMS routing for Lemonade
-Framework applications. It owns the canonical `cms_route` URL index, route
-reservation and resolution, locale-aware public routing, and contracts for
-module-provided public detail and collection handlers.
+`johnnyxlemonade/cms-core` provides shared CMS content lifecycle and public
+routing for Lemonade Framework applications. It owns the canonical `cms_route`
+URL index, route reservation and resolution, locale-aware public routing, and
+contracts for module-provided public handlers.
 
-The package is runtime-only. It does not own Admin UI, permissions, DataGrid,
-AdminEditor, public HTML, content publication policy, or file storage. The host
-supplies locale and module-state runtime ports. A host or content module registers
-the handler that authoritatively renders a public CMS response.
+The package does not own Admin UI, permissions, DataGrid, AdminEditor, public
+HTML, or file storage. Content modules use its shared publication and audit
+lifecycle. The host supplies locale and module-state runtime ports and
+registers handlers that render public CMS responses.
 
 ## Requirements
 
@@ -44,7 +44,8 @@ ordinary host application routes and remain outside CMS Core.
 
 - `johnnyxlemonade/framework` owns the base application runtime and generic infrastructure.
 - CMS Core owns public CMS route resolution and handler contracts.
-- The host owns public presentation, module publication rules, locale ports and concrete handlers.
+- Content modules own domain-specific publication rules and public read models.
+- The host owns public presentation, locale ports and concrete handlers.
 - Admin packages must not become a dependency of CMS Core.
 
 ## Development and QA
@@ -81,13 +82,36 @@ records. Tag suggestions retain their existing locale-wide alphabetical order.
 and audit joins. It has no Admin dependency. Pagination, search, filters and
 DataGrid transport are provided by `admin-platform`.
 
+`PublishedContentScope::query($database, $definition, $locale)` builds the
+shared public SQL scope for nonhierarchical routed content. News, Auction and
+Rental use it for published translations, active languages, nondeleted roots,
+nonempty titles and active canonical routes. A `null` locale checks visibility
+in any enabled language. The caller still checks module availability and owns
+its domain filters, projections and batched hydration. Page retains its
+ancestor visibility rules; Content Types retain their optional canonical route
+and dynamic type rules.
+
 ## Shared-table content definitions
 
-`CmsContentDefinition::rootScope` optionally constrains a shared root table to an
+`CmsContentDefinition::rootScope()` optionally constrains a shared root table to an
 explicit partition (for example a content type ID). CMS root reads, locks, writes,
 translation reads and locale projections preserve that scope; domain mapping
 cannot overwrite it. Existing definitions have an empty scope and retain their
 behavior.
+
+The definition, editor input, canonical route, route reservation and locale
+resolution expose immutable values through `getXxx()` methods. Boolean input
+presence uses `CmsContentInput::hasPublication()`. `rootScope()` and
+`routePrefix($locale)` remain operations for scoped queries and locale-specific
+path lookup. `CmsContentDefinition` keeps its named constructor arguments while
+its properties are private. For example:
+
+```php
+$moduleCode = $definition->getModuleCode();
+$rootTable = $definition->getRootTable();
+$hasBody = $definition->hasBodyColumns();
+$pathPrefix = $definition->routePrefix('cs');
+```
 
 An optional `CmsContentValueWriter` participates in `CmsContentLifecycle`'s existing
 transaction. It checks creation before root insertion, initializes draft defaults,

@@ -11,7 +11,7 @@ use Lemonade\Cms\Content\CmsRoot;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Overuje explicitni domenove mapovani pro root a jazykovou mutaci
+ * Verifies explicit domain mapping for root and translation values
  */
 final class CmsDomainMappingTest extends TestCase
 {
@@ -43,13 +43,13 @@ final class CmsDomainMappingTest extends TestCase
     }
 
     /**
-     * Mapuje privatni oznacene hodnoty a vynecha vnitrni stav bez atributu
+     * Maps attributed private values and excludes unattributed internal state
      */
     public function testMapsPrivatePropertiesWithoutPersistingInternalState(): void
     {
         $data = new readonly class ('Author', 'Prague', ['draft' => 'internal']) {
             /**
-             * Nastavuje obsahove hodnoty a nemapovany vnitrni stav
+             * Receives content values and unmapped internal state
              *
              * @param array<string,string> $fields
              */
@@ -62,7 +62,7 @@ final class CmsDomainMappingTest extends TestCase
             ) {}
 
             /**
-             * Vraci autora testovaciho zaznamu
+             * Returns the test record author
              */
             public function authorName(): string
             {
@@ -70,7 +70,7 @@ final class CmsDomainMappingTest extends TestCase
             }
 
             /**
-             * Vraci lokalizovane pracoviste
+             * Returns the localized workplace
              */
             public function location(): string
             {
@@ -78,7 +78,7 @@ final class CmsDomainMappingTest extends TestCase
             }
 
             /**
-             * Vraci nemapovany vstup zaznamu
+             * Returns unmapped record input
              *
              * @return array<string,string>
              */
@@ -121,12 +121,12 @@ final class CmsDomainMappingTest extends TestCase
 }
 
 /**
- * Predstavuje domenova pole jedne testovaci drazby
+ * Represents domain fields of a test auction
  */
 final readonly class MappedAuctionData
 {
     /**
-     * Nastavuje globalni a lokalizovane hodnoty
+     * Receives root and localized values
      */
     public function __construct(
         #[CmsLocalized('location')]

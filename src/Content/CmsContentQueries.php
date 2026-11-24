@@ -8,7 +8,7 @@ use Lemonade\Framework\Database\Database;
 use Lemonade\Framework\Database\QueryBuilder;
 
 /**
- * Sklada standardni CMS projekce z registrovane definice a atributoveho mapovani
+ * Builds shared CMS queries from a registered content definition
  */
 final readonly class CmsContentQueries
 {
@@ -16,17 +16,17 @@ final readonly class CmsContentQueries
     public const LOCALIZED_COLUMNS = ['id', 'locale', 'title', 'page_title', 'summary', 'content', 'meta_description', 'publication_state', 'published_at'];
 
     /**
-     * Nastavuje databazi a registrovanou definici obsahu
+     * Receives the database and registered content definition
      */
     public function __construct(private Database $database, private CmsContentDefinition $definition) {}
 
     /**
-     * Vrati root vcetne domenovych sloupcu a auditnich identit bez filtru smazani
+     * Builds a root query with domain columns and audit identities, including deleted rows
      */
     public function root(): QueryBuilder
     {
-        $columns = (new CmsDomainMapping($this->definition->dataClass))->columns();
-        $query = $this->database->table($this->definition->rootTable . ' a')
+        $columns = (new CmsDomainMapping($this->definition->getDataClass()))->columns();
+        $query = $this->database->table($this->definition->getRootTable() . ' a')
             ->select(array_map(static fn(string $column): string => 'a.' . $column, [...self::ROOT_COLUMNS, ...array_keys(CmsContentInput::DISPLAY_DEFAULTS), ...array_values($columns['root'])]));
         foreach (['creator' => 'created_by', 'updater' => 'updated_by', 'deleter' => 'deleted_by', 'owner' => 'owner_id'] as $alias => $column) {
             $name = $alias === 'owner' ? 'owner_name' : $column . '_name';
@@ -38,18 +38,21 @@ final readonly class CmsContentQueries
     }
 
     /**
-     * Vrati lokalizovane standardni a domenove sloupce s canonical URL
+     * Builds a translation query with shared and domain columns and canonical URL
      */
     public function translations(): QueryBuilder
     {
-        $columns = (new CmsDomainMapping($this->definition->dataClass))->columns();
-        $query = $this->database->table($this->definition->translationTable . ' t')
+        $columns = (new CmsDomainMapping($this->definition->getDataClass()))->columns();
+        $localizedColumns = $this->definition->hasBodyColumns()
+            ? self::LOCALIZED_COLUMNS
+            : array_values(array_diff(self::LOCALIZED_COLUMNS, ['summary', 'content']));
+        $query = $this->database->table($this->definition->getTranslationTable() . ' t')
             ->select(array_map(static fn(string $column): string => 't.' . $column, [
-                ...self::LOCALIZED_COLUMNS, $this->definition->translationForeignKey, ...array_values($columns['localized']),
+                ...$localizedColumns, $this->definition->getTranslationForeignKey(), ...array_values($columns['localized']),
             ]));
 
         if ($this->definition->rootScope() !== []) {
-            $query = $query->joinOn($this->definition->rootTable . ' scope_root', 'scope_root.id', '=', 't.' . $this->definition->translationForeignKey);
+            $query = $query->joinOn($this->definition->getRootTable() . ' scope_root', 'scope_root.id', '=', 't.' . $this->definition->getTranslationForeignKey());
             $query = $this->scope($query, 'scope_root');
         }
 
@@ -57,20 +60,20 @@ final readonly class CmsContentQueries
     }
 
     /**
-     * Pripoji canonical cestu k mutaci s internim aliasem t
+     * Joins the canonical route to a translation aliased as t
      */
     public function withCanonicalRoute(QueryBuilder $query): QueryBuilder
     {
         return $query->joinRaw(
             table: 'cms_route route',
-            condition: 'route.module_code = ? AND route.entity_id = t.' . $this->definition->translationForeignKey . ' AND route.locale = t.locale',
-            bindings: [$this->definition->moduleCode],
+            condition: 'route.module_code = ? AND route.entity_id = t.' . $this->definition->getTranslationForeignKey() . ' AND route.locale = t.locale',
+            bindings: [$this->definition->getModuleCode()],
             type: 'LEFT',
         )->selectRaw('route.path AS canonical_path');
     }
 
     /**
-     * Omezi dotaz na explicitni oddil sdilene tabulky
+     * Restricts a query to the module's partition of a shared table
      */
     public function scope(QueryBuilder $query, string $alias = ''): QueryBuilder
     {

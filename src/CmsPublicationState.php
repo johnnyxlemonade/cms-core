@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Lemonade\Cms;
 
 /**
- * Rozlisuje novou, rozpracovanou a verejne publikovanou content mutaci
+ * Distinguishes new, draft and published content translations
  */
 enum CmsPublicationState: int
 {
@@ -14,7 +14,7 @@ enum CmsPublicationState: int
     case Published = 2;
 
     /**
-     * Stavy dostupne v CMS editoru a jejich prekladove klice
+     * Returns the editor states and their translation keys
      *
      * @return array<int,string>
      */
@@ -27,9 +27,9 @@ enum CmsPublicationState: int
     }
 
     /**
-     * Interni novy zaznam se v editoru chova jako koncept
+     * Represents a new record as a draft in the editor
      */
-    public function editorValue(): string
+    public function getEditorValue(): string
     {
         return (string) ($this === self::New ? self::Draft->value : $this->value);
     }

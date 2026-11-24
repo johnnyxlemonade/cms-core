@@ -7,17 +7,17 @@ namespace Lemonade\Cms;
 use InvalidArgumentException;
 
 /**
- * Normalizuje lokalizovane stitky pri zachovani jejich poradi
+ * Normalizes localized tags while preserving their order
  */
 final class CmsTagNormalizer
 {
     /**
-     * Brani vytvareni instance stateless funkce
+     * Prevents construction of a stateless helper
      */
     private function __construct() {}
 
     /**
-     * Vrati jedine neprazdne stitky z pole nebo oddeleneho textu
+     * Returns unique nonempty tags from an array or delimited text
      *
      * @return list<string>
      */

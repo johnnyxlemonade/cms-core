@@ -4,20 +4,21 @@ declare(strict_types=1);
 
 namespace Lemonade\Cms\Content;
 
+use Lemonade\Cms\CmsPublicationState;
 use Lemonade\Framework\Database\Schema\Blueprint\TableBlueprint;
 
 /**
- * Definuje spolecne sloupce a vazby oddelenych CMS tabulek
+ * Defines shared columns and references for CMS content tables
  */
 final class CmsContentSchema
 {
     /**
-     * Brani vytvareni instance stateless funkce
+     * Prevents construction of a stateless helper
      */
     private function __construct() {}
 
     /**
-     * Prida identitu, vlastnika a soft delete korenoveho zaznamu
+     * Adds identity, ownership and soft delete columns to a root table
      */
     public static function root(TableBlueprint $table, string $rootTable): void
     {
@@ -44,19 +45,21 @@ final class CmsContentSchema
     }
 
     /**
-     * Prida obsah, SEO, publikaci a unikatni locale mutace
+     * Adds localized content, SEO and publication columns, with optional body columns
      */
-    public static function translation(TableBlueprint $table, string $rootTable, string $rootForeignKey): void
+    public static function translation(TableBlueprint $table, string $rootTable, string $rootForeignKey, bool $hasBodyColumns = true): void
     {
         $table->id();
         $table->unsignedBigInteger($rootForeignKey);
         $table->string('locale', 10);
         $table->string('title', 180)->nullable();
         $table->string('page_title', 180)->nullable();
-        $table->text('summary')->nullable();
-        $table->longText('content')->nullable();
+        if ($hasBodyColumns) {
+            $table->text('summary')->nullable();
+            $table->longText('content')->nullable();
+        }
         $table->string('meta_description', 255)->nullable();
-        $table->tinyInteger('publication_state')->unsigned()->default(0);
+        $table->tinyInteger('publication_state')->unsigned()->default(CmsPublicationState::New->value);
         $table->datetime('published_at')->nullable();
         $table->timestamps();
         $table->unique([$rootForeignKey, 'locale'], 'uq_' . $rootTable . '_translation_locale');
@@ -71,7 +74,7 @@ final class CmsContentSchema
     }
 
     /**
-     * Prida stitky jazykove mutace se stabilnim poradim
+     * Adds ordered tags for a translation
      */
     public static function tags(TableBlueprint $table, string $rootTable, string $translationTable): void
     {

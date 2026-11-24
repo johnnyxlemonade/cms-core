@@ -7,12 +7,12 @@ namespace Lemonade\Cms\Content;
 use DomainException;
 
 /**
- * Predava prekladove klice validacnich chyb pod jmeny obsahovych poli
+ * Carries validation translation keys indexed by content field
  */
 final class CmsContentValidationException extends DomainException
 {
     /**
-     * Zachova konkretni pole i puvodni klic prvni chyby
+     * Preserves field errors and the first error as exception message
      *
      * @param array<string,string> $errors
      */
@@ -22,11 +22,11 @@ final class CmsContentValidationException extends DomainException
     }
 
     /**
-     * Vrati prekladove klice podle transportnich jmen poli
+     * Returns translation keys indexed by transport field names
      *
      * @return array<string,string>
      */
-    public function errors(): array
+    public function getErrors(): array
     {
         return $this->errors;
     }

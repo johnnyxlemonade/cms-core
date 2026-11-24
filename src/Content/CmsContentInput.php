@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Lemonade\Cms\Content;
 
 use InvalidArgumentException;
+use Lemonade\Cms\CmsPublicationState;
 
 /**
- * Predava spolecny obsah a volitelnou publikaci jedne jazykove mutace
+ * Carries shared content and optional publication input for one locale
  */
 final readonly class CmsContentInput
 {
@@ -22,22 +23,22 @@ final readonly class CmsContentInput
     ];
 
     /**
-     * Nastavuje obsah editoru pred domenovou validaci a ulozenim
+     * Creates validated shared editor input for one content locale
      *
      * @param array<string,int> $displaySettings
      */
     public function __construct(
-        public string $locale,
-        public string $title,
-        public ?string $pageTitle,
-        public ?string $summary,
-        public ?string $content,
-        public ?string $metaDescription,
-        public mixed $tags,
-        public bool $hasPublication,
-        public mixed $publicationState,
-        public mixed $publishedAt,
-        public array $displaySettings = [],
+        private string $locale,
+        private string $title,
+        private ?string $pageTitle,
+        private ?string $summary,
+        private ?string $content,
+        private ?string $metaDescription,
+        private mixed $tags,
+        private bool $hasPublication,
+        private mixed $publicationState,
+        private mixed $publishedAt,
+        private array $displaySettings = [],
     ) {
         foreach ($displaySettings as $column => $value) {
             if (!array_key_exists($column, self::DISPLAY_DEFAULTS) || !in_array($value, [0, 1], true)) {
@@ -47,7 +48,97 @@ final readonly class CmsContentInput
     }
 
     /**
-     * Pripravi spolecne hodnoty ze standardniho editoroveho payloadu
+     * Returns content locale
+     */
+    public function getLocale(): string
+    {
+        return $this->locale;
+    }
+
+    /**
+     * Returns submitted title
+     */
+    public function getTitle(): string
+    {
+        return $this->title;
+    }
+
+    /**
+     * Returns submitted browser page title
+     */
+    public function getPageTitle(): ?string
+    {
+        return $this->pageTitle;
+    }
+
+    /**
+     * Returns submitted summary
+     */
+    public function getSummary(): ?string
+    {
+        return $this->summary;
+    }
+
+    /**
+     * Returns submitted body content
+     */
+    public function getContent(): ?string
+    {
+        return $this->content;
+    }
+
+    /**
+     * Returns submitted SEO description
+     */
+    public function getMetaDescription(): ?string
+    {
+        return $this->metaDescription;
+    }
+
+    /**
+     * Returns submitted tag input
+     */
+    public function getTags(): mixed
+    {
+        return $this->tags;
+    }
+
+    /**
+     * Reports whether publication state was submitted
+     */
+    public function hasPublication(): bool
+    {
+        return $this->hasPublication;
+    }
+
+    /**
+     * Returns submitted publication state
+     */
+    public function getPublicationState(): mixed
+    {
+        return $this->publicationState;
+    }
+
+    /**
+     * Returns submitted publication timestamp
+     */
+    public function getPublishedAt(): mixed
+    {
+        return $this->publishedAt;
+    }
+
+    /**
+     * Returns validated display settings
+     *
+     * @return array<string,int>
+     */
+    public function getDisplaySettings(): array
+    {
+        return $this->displaySettings;
+    }
+
+    /**
+     * Normalizes shared values from the editor payload
      *
      * @param array<string,mixed> $data
      */
@@ -56,7 +147,12 @@ final readonly class CmsContentInput
         $text = CmsContentValidation::texts($data, ['locale', 'title', 'page_title', 'summary', 'content', 'meta_description', 'published_at']);
         $errors = [];
         $state = $data['publication_state'] ?? null;
-        if ($state !== null && !in_array($state, [1, 2, '1', '2'], true)) {
+        if ($state !== null && !in_array($state, [
+            CmsPublicationState::Draft->value,
+            CmsPublicationState::Published->value,
+            (string) CmsPublicationState::Draft->value,
+            (string) CmsPublicationState::Published->value,
+        ], true)) {
             $errors['publication_state'] = 'admin.cms_validation.publication_invalid';
         }
         if ($text['published_at'] !== null && !CmsContentValidation::validDate($text['published_at'])) {
@@ -89,8 +185,11 @@ final readonly class CmsContentInput
         );
     }
 
-    /** @param array<string,mixed> $data
-     *  @return array<string,int>
+    /**
+     * Returns validated root display settings from the editor payload
+     *
+     * @param array<string,mixed> $data
+     * @return array<string,int>
      */
     private static function displaySettings(array $data): array
     {

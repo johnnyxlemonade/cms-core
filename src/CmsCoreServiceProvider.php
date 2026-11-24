@@ -23,12 +23,12 @@ use Lemonade\Framework\Database\Migration\MigrationRegistry;
 use Lemonade\Framework\Http\Middleware\MiddlewareStack;
 
 /**
- * Registruje reusable CMS routing bez host adapteru
+ * Registers reusable CMS routing without a host adapter
  */
-final class CmsCoreServiceProvider implements ServiceProviderInterface, BootableServiceProviderInterface
+final readonly class CmsCoreServiceProvider implements ServiceProviderInterface, BootableServiceProviderInterface
 {
     /**
-     * Zapisuje reusable CMS runtime a migraci bez aktivace host rout
+     * Registers the CMS runtime and migration without activating host routes
      */
     public function register(ContainerBuilderInterface $container): void
     {
@@ -47,7 +47,7 @@ final class CmsCoreServiceProvider implements ServiceProviderInterface, Bootable
     }
 
     /**
-     * Pripojuje CMS middleware a core migraci po container freeze
+     * Connects CMS middleware and the core migration after registration
      */
     public function boot(ContainerInterface $container): void
     {

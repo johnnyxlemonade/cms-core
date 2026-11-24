@@ -9,12 +9,12 @@ use Lemonade\Framework\Database\Schema\Blueprint\TableBlueprint;
 use Lemonade\Framework\Database\Schema\Schema;
 
 /**
- * Vytvari kanonicke CMS routy Admin module platformy
+ * Creates canonical CMS routes shared by content modules
  */
-final class CreateCoreCmsRoutes implements MigrationInterface
+final readonly class CreateCoreCmsRoutes implements MigrationInterface
 {
     /**
-     * Vraci stabilni identifikator migrace
+     * Returns the stable migration identifier
      */
     public static function identifier(): string
     {
@@ -22,7 +22,7 @@ final class CreateCoreCmsRoutes implements MigrationInterface
     }
 
     /**
-     * Vytvari tabulku canonical CMS rout
+     * Creates the canonical route table
      */
     public function up(Schema $schema): void
     {

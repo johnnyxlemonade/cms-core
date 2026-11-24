@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Lemonade\Cms\Routing\Cms;
 
 /**
- * Nese lokalizovany slug a plnou canonical cestu pripravenou k rezervaci
+ * Carries a localized slug and canonical path ready for reservation
  */
 final readonly class CmsRouteReservation
 {
     /**
-     * Nastavuje slug entity a canonical path bez uvodniho lomitka
+     * Receives the entity slug and canonical path without a leading slash
      */
     public function __construct(
         private string $slug,
@@ -18,17 +18,17 @@ final readonly class CmsRouteReservation
     ) {}
 
     /**
-     * Vrati slug odpovidajici rezervovane canonical ceste
+     * Returns the slug of the reserved canonical path
      */
-    public function slug(): string
+    public function getSlug(): string
     {
         return $this->slug;
     }
 
     /**
-     * Vrati canonical cestu bez uvodniho lomitka
+     * Returns the canonical path without a leading slash
      */
-    public function path(): string
+    public function getPath(): string
     {
         return $this->path;
     }

@@ -9,7 +9,7 @@ use Lemonade\Cms\CmsTagNormalizer;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Overuje poradi, hranici delky a vstupni podoby lokalizovanych stitku
+ * Verifies tag order, length limits and accepted input forms
  */
 final class CmsTagNormalizerTest extends TestCase
 {

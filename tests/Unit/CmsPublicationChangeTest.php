@@ -11,11 +11,15 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Overuje zmeny publikace a zachovani existujicich hodnot
+ * Verifies publication changes and preservation of stored values
  */
 final class CmsPublicationChangeTest extends TestCase
 {
-    /** @param array{CmsPublicationState,string|null,bool} $expected */
+    /**
+     * Verifies one publication transition and its stored values
+     *
+     * @param array{CmsPublicationState,string|null,bool} $expected
+     */
     #[DataProvider('changes')]
     public function testPublicationChange(
         bool $present,
@@ -29,7 +33,7 @@ final class CmsPublicationChangeTest extends TestCase
     }
 
     /**
-     * Poskytuje skutecne stavy publikace a jejich ocekavane zmeny
+     * Provides publication states and their expected changes
      *
      * @return iterable<string,array{bool,mixed,mixed,mixed,mixed,array{CmsPublicationState,string|null,bool}}>
      */

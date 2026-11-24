@@ -18,12 +18,12 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**
- * Overuje lazy public locale normalizaci a installer bypass
+ * Verifies lazy public locale normalization and installer bypass
  */
 final class PublicLocaleRoutingMiddlewareTest extends TestCase
 {
     /**
-     * Overuje normalizaci dispatch cesty aktivni non-default lokalizace
+     * Verifies normalized dispatch paths for enabled nondefault locales
      */
     public function testEnabledNonDefaultLocaleNormalizesOnlyTheDispatchPath(): void
     {
@@ -40,7 +40,7 @@ final class PublicLocaleRoutingMiddlewareTest extends TestCase
     }
 
     /**
-     * Overuje predani korene aktivni non-default lokalizace host routingu
+     * Verifies routing of the root for an enabled nondefault locale
      */
     public function testEnabledNonDefaultLocaleRootDispatchesToTheHostRoot(): void
     {
@@ -56,7 +56,7 @@ final class PublicLocaleRoutingMiddlewareTest extends TestCase
     }
 
     /**
-     * Overuje zachovani dispatch cesty pro defaultni lokalizaci a bezny path
+     * Verifies default locale and ordinary dispatch paths remain intact
      */
     public function testDefaultLocaleAndUnknownPathKeepTheirOriginalDispatchPath(): void
     {
@@ -73,7 +73,7 @@ final class PublicLocaleRoutingMiddlewareTest extends TestCase
     }
 
     /**
-     * Overuje canonical redirect defaultniho locale prefixu vcetne query
+     * Verifies canonical redirects from default locale prefixes with queries
      */
     public function testDefaultLocalePrefixRedirectsBeforeRoutingAndPreservesQuery(): void
     {
@@ -88,7 +88,7 @@ final class PublicLocaleRoutingMiddlewareTest extends TestCase
     }
 
     /**
-     * Overuje zastaveni disabled znamou lokalizaci pred routingem
+     * Verifies known disabled locales stop before routing
      */
     public function testDisabledKnownLocaleStopsBeforeRouting(): void
     {
@@ -99,7 +99,7 @@ final class PublicLocaleRoutingMiddlewareTest extends TestCase
     }
 
     /**
-     * Overuje, ze installer bypass nespousti locale registry ani jeho databazovy snapshot
+     * Verifies installer bypass avoids locale registry and database reads
      */
     public function testInstallerBypassDoesNotResolveThePublicLocaleRegistry(): void
     {
@@ -115,7 +115,7 @@ final class PublicLocaleRoutingMiddlewareTest extends TestCase
     }
 
     /**
-     * Overuje, ze technicke API cesty nemaji locale dispatch variantu
+     * Verifies technical API paths have no locale dispatch variant
      */
     public function testApiPathBypassesThePublicLocaleRegistry(): void
     {
@@ -130,7 +130,7 @@ final class PublicLocaleRoutingMiddlewareTest extends TestCase
     }
 
     /**
-     * Overuje, ze locale prefix nepresmeruje ani nezpristupni technicke API cesty
+     * Verifies locale prefixes do not expose technical API paths
      */
     public function testLocalePrefixedApiPathReturnsNotFound(): void
     {
@@ -148,7 +148,7 @@ final class PublicLocaleRoutingMiddlewareTest extends TestCase
     }
 
     /**
-     * Vytvari middleware s request-scoped lazy resolverem
+     * Creates middleware with a request scoped lazy resolver
      */
     private function middleware(PublicLocaleTestRegistry $registry, ServerRequestInterface $request): PublicLocaleRoutingMiddleware
     {
@@ -160,14 +160,14 @@ final class PublicLocaleRoutingMiddlewareTest extends TestCase
 }
 
 /**
- * Poskytuje stabilni public locale snapshot a eviduje jeho cteni
+ * Provides a stable public locale snapshot and tracks reads
  */
 final class PublicLocaleTestRegistry implements PublicLocaleRegistryInterface
 {
     private int $snapshotReads = 0;
 
     /**
-     * Vraci atomicky snapshot bez zavislosti na databazi
+     * Returns an atomic snapshot without a database
      */
     public function snapshot(): PublicLocaleSnapshot
     {
@@ -181,7 +181,7 @@ final class PublicLocaleTestRegistry implements PublicLocaleRegistryInterface
     }
 
     /**
-     * Vraci pocet pozadavku na locale snapshot
+     * Returns the number of locale snapshot requests
      */
     public function snapshotReads(): int
     {
@@ -190,14 +190,14 @@ final class PublicLocaleTestRegistry implements PublicLocaleRegistryInterface
 }
 
 /**
- * Zachycuje request predany dalsimu middleware nebo dispatchi
+ * Captures the request passed to the next handler
  */
 final class CapturingLocaleRequestHandler implements RequestHandlerInterface
 {
     public ?ServerRequestInterface $request = null;
 
     /**
-     * Uklada request a vraci prazdnou uspesnou odpoved
+     * Stores the request and returns an empty success response
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {

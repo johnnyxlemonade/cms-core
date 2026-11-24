@@ -8,12 +8,12 @@ use Lemonade\Cms\CmsPublicationState;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Overuje stabilni databazove hodnoty shared publication lifecycle
+ * Verifies stable database values for shared publication lifecycle
  */
 final class CmsPublicationStateTest extends TestCase
 {
     /**
-     * Publication lifecycle ma stabilni ciselne hodnoty pro content mutace
+     * Publication lifecycle uses stable numeric values for content translations
      */
     public function testDefinesStablePublicationStates(): void
     {
@@ -28,8 +28,8 @@ final class CmsPublicationStateTest extends TestCase
             '1' => 'admin.status.draft',
             '2' => 'admin.status.published',
         ], CmsPublicationState::editorOptionLabelKeys());
-        self::assertSame('1', CmsPublicationState::New->editorValue());
-        self::assertSame('1', CmsPublicationState::Draft->editorValue());
-        self::assertSame('2', CmsPublicationState::Published->editorValue());
+        self::assertSame('1', CmsPublicationState::New->getEditorValue());
+        self::assertSame('1', CmsPublicationState::Draft->getEditorValue());
+        self::assertSame('2', CmsPublicationState::Published->getEditorValue());
     }
 }

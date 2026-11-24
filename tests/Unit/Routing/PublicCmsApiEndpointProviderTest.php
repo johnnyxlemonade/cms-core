@@ -14,7 +14,7 @@ use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Overuje attachment route zaregistrovanou pres Framework API registry
+ * Verifies the attachment route registered through the Framework API registry
  */
 final class PublicCmsApiEndpointProviderTest extends TestCase
 {

@@ -17,14 +17,16 @@ use Lemonade\Framework\Support\Slug\Slugger;
 use RuntimeException;
 
 /**
- * Orchestruje nehierarchicky lokalizovany obsah v jedne auditovane transakci
+ * Saves nonhierarchical localized content in one audited transaction
  *
  * @template T of object
  */
 final readonly class CmsContentLifecycle
 {
+    private const MAXIMUM_SAVE_ATTEMPTS = 3;
+
     /**
-     * Nastavuje tabulky, domenove mapovani, routy a transakcni runtime
+     * Receives tables, domain mapping, routes and transactional runtime
      *
      * @param CmsDomainMapping<T> $mapping
      */
@@ -39,7 +41,7 @@ final readonly class CmsContentLifecycle
     ) {}
 
     /**
-     * Zalozi prazdny root a vychozi jazykovou mutaci
+     * Creates an empty root record and its initial translation
      */
     public function createDraft(int $actorUserId, string $locale): int
     {
@@ -57,7 +59,7 @@ final readonly class CmsContentLifecycle
     }
 
     /**
-     * Ulozi obsah a domenove hodnoty v jedne auditovane transakci
+     * Saves content and domain values in one audited transaction
      *
      * @param T $domain
      */
@@ -67,61 +69,64 @@ final readonly class CmsContentLifecycle
         if (array_intersect_key($values['root'], $this->definition->rootScope()) !== []) {
             throw new InvalidArgumentException('CMS domain mapping cannot replace the root scope.');
         }
-        if (array_key_exists($this->definition->translationForeignKey, $values['localized'])) {
+        if (array_key_exists($this->definition->getTranslationForeignKey(), $values['localized'])) {
             throw new InvalidArgumentException('CMS domain mapping cannot replace the translation owner.');
         }
-        for ($attempt = 1; $attempt <= 3; $attempt++) {
+        for ($attempt = 1; $attempt <= self::MAXIMUM_SAVE_ATTEMPTS; $attempt++) {
             try {
                 $this->runtime->execute($actorUserId, function (CmsContentEvents $events) use ($actorUserId, $id, $input, $domain, $values): void {
                     $root = $this->model->rootForUpdate($id);
                     if ($root === null) {
                         throw new DomainException($this->validation('not_found'));
                     }
-                    $translation = $this->model->translationForUpdate($id, $input->locale);
-                    if ($translation === null && !$this->runtime->isEnabledLocale($input->locale)) {
+                    $translation = $this->model->translationForUpdate($id, $input->getLocale());
+                    if ($translation === null && !$this->runtime->isEnabledLocale($input->getLocale())) {
                         throw new CmsContentValidationException(['locale' => $this->validation('locale_invalid')]);
                     }
                     $now = date('Y-m-d H:i:s');
                     try {
                         [$publicationState, $publishedAt, $publicationChanged] = CmsPublicationChange::resolve(
-                            $input->hasPublication,
-                            $input->publicationState,
-                            $input->publishedAt,
+                            $input->hasPublication(),
+                            $input->getPublicationState(),
+                            $input->getPublishedAt(),
                             (int) ($translation['publication_state'] ?? CmsPublicationState::New->value),
                             $translation['published_at'] ?? null,
                             $now,
                         );
                     } catch (InvalidArgumentException $exception) {
-                        throw new CmsContentValidationException([
-                            str_contains($exception->getMessage(), 'date') ? 'published_at' : 'publication_state' => $this->validation('publication_invalid'),
-                        ]);
+                        $field = str_contains($exception->getMessage(), 'date') ? 'published_at' : 'publication_state';
+                        throw new CmsContentValidationException([$field => $this->validation('publication_invalid')]);
                     }
-                    CmsContentValidation::assert(CmsContentValidation::content($input, $publicationState, $this->definition->validationPrefix));
-                    $hasRoute = $this->routes->hasReservation($this->definition->moduleCode, $id, $input->locale);
-                    $slug = $hasRoute || $input->title === '' ? null : $this->slugger->slug($input->title, 180, $input->locale);
+                    CmsContentValidation::assert(CmsContentValidation::content($input, $publicationState, $this->definition->getValidationPrefix()));
+                    $hasRoute = $this->routes->hasReservation($this->definition->getModuleCode(), $id, $input->getLocale());
+                    $slug = $hasRoute || $input->getTitle() === ''
+                        ? null
+                        : $this->slugger->slug($input->getTitle(), 180, $input->getLocale());
                     if ($slug === '' || ($publicationState === CmsPublicationState::Published && !$hasRoute && $slug === null)) {
                         throw new CmsContentValidationException(['title' => 'admin.url_segment.invalid']);
                     }
                     try {
-                        $tags = CmsTagNormalizer::normalize($input->tags);
+                        $tags = CmsTagNormalizer::normalize($input->getTags());
                     } catch (InvalidArgumentException $exception) {
                         throw new CmsContentValidationException(['tags' => $this->validation('tag_max_length')]);
                     }
                     $existingTags = $translation === null ? [] : $this->model->tags((int) $translation['id']);
                     $domainChanges = $this->mapping->changes($domain, $root, $translation);
                     $settingsChanged = false;
-                    foreach ($input->displaySettings as $column => $value) {
+                    foreach ($input->getDisplaySettings() as $column => $value) {
                         if ((int) $root[$column] !== $value) {
                             $settingsChanged = true;
                         }
                     }
                     $content = [
-                        'title' => $input->title,
-                        'page_title' => $input->pageTitle,
-                        'summary' => $input->summary,
-                        'content' => $input->content,
-                        'meta_description' => $input->metaDescription,
+                        'title' => $input->getTitle(),
+                        'page_title' => $input->getPageTitle(),
+                        'meta_description' => $input->getMetaDescription(),
                     ];
+                    if ($this->definition->hasBodyColumns()) {
+                        $content['summary'] = $input->getSummary();
+                        $content['content'] = $input->getContent();
+                    }
                     $translationChanged = $translation === null || $slug !== null || $domainChanges['localized'] || $existingTags !== $tags;
                     if ($translation !== null) {
                         foreach ($content as $column => $value) {
@@ -130,7 +135,7 @@ final readonly class CmsContentLifecycle
                             }
                         }
                     }
-                    $valuesChanged = $this->valueWriter?->prepare($id, $input->locale, $publicationState, $domain) === true;
+                    $valuesChanged = $this->valueWriter?->prepare($id, $input->getLocale(), $publicationState, $domain) === true;
                     if ($valuesChanged) {
                         $translationChanged = true;
                     }
@@ -140,23 +145,23 @@ final readonly class CmsContentLifecycle
                         return;
                     }
                     if ($domainChanges['root'] || $settingsChanged) {
-                        $this->model->saveRoot($id, array_merge($values['root'], $input->displaySettings), $now);
+                        $this->model->saveRoot($id, array_merge($values['root'], $input->getDisplaySettings()), $now);
                         $this->record($events, 'updated', $id);
                     }
                     if ($translationChanged) {
                         if ($slug !== null) {
                             $this->routes->reserveAutomatic(
-                                moduleCode: $this->definition->moduleCode,
+                                moduleCode: $this->definition->getModuleCode(),
                                 entityId: $id,
-                                locale: $input->locale,
+                                locale: $input->getLocale(),
                                 baseSlug: $slug,
                                 maximumSlugLength: 180,
-                                pathPrefix: $this->definition->routePrefix($input->locale),
+                                pathPrefix: $this->definition->routePrefix($input->getLocale()),
                             );
                         }
                         $translationId = $this->model->saveTranslation(
                             $id,
-                            $input->locale,
+                            $input->getLocale(),
                             $translation === null ? null : (int) $translation['id'],
                             array_merge($content, $values['localized']),
                             $now,
@@ -164,19 +169,19 @@ final readonly class CmsContentLifecycle
                         if ($existingTags !== $tags) {
                             $this->model->saveTags($translationId, $tags, $now);
                         }
-                        $this->model->promoteDraft($id, $input->locale, $now);
-                        $this->record($events, $translation === null ? 'translation_created' : 'translation_updated', $id, ['locale' => $input->locale]);
+                        $this->model->promoteDraft($id, $input->getLocale(), $now);
+                        $this->record($events, $translation === null ? 'translation_created' : 'translation_updated', $id, ['locale' => $input->getLocale()]);
                     }
                     if ($publicationChanged) {
-                        $this->model->savePublication($id, $input->locale, $publicationState, $publishedAt, $now);
+                        $this->model->savePublication($id, $input->getLocale(), $publicationState, $publishedAt, $now);
                         if ($publicationState === CmsPublicationState::Published
                             || (int) ($translation['publication_state'] ?? CmsPublicationState::New->value) === CmsPublicationState::Published->value
                         ) {
-                            $this->record($events, $publicationState === CmsPublicationState::Published ? 'published' : 'unpublished', $id, ['locale' => $input->locale]);
+                            $this->record($events, $publicationState === CmsPublicationState::Published ? 'published' : 'unpublished', $id, ['locale' => $input->getLocale()]);
                         }
                     }
                     if ($valuesChanged) {
-                        $this->valueWriter?->save($id, $input->locale);
+                        $this->valueWriter?->save($id, $input->getLocale());
                     }
                     $this->model->saveRoot($id, ['updated_by' => $actorUserId], $now);
                 });
@@ -184,9 +189,9 @@ final readonly class CmsContentLifecycle
                 return;
             } catch (DatabaseException $exception) {
                 $message = strtolower($exception->getMessage());
-                if ($attempt === 3 || (!str_contains($message, 'uq_cms_route_locale_path')
+                if ($attempt === self::MAXIMUM_SAVE_ATTEMPTS || (!str_contains($message, 'uq_cms_route_locale_path')
                     && !str_contains($message, 'uq_cms_route_target')
-                    && !str_contains($message, $this->definition->translationUniqueConstraint))) {
+                    && !str_contains($message, $this->definition->getTranslationUniqueConstraint()))) {
                     throw $exception;
                 }
             }
@@ -194,35 +199,35 @@ final readonly class CmsContentLifecycle
     }
 
     /**
-     * Explicitne upravi canonical segment jedne mutace
+     * Changes the canonical segment of one translation
      */
     public function changeUrlSegment(int $actorUserId, int $id, string $locale, string $segment): string
     {
-        $locale = strtolower(trim($locale));
-        $segment = $this->slugger->slug($segment, 180, $locale);
-        if ($segment === '') {
+        $normalizedLocale = strtolower(trim($locale));
+        $normalizedSegment = $this->slugger->slug($segment, 180, $normalizedLocale);
+        if ($normalizedSegment === '') {
             throw new DomainException('admin.url_segment.invalid');
         }
 
-        return $this->runtime->execute($actorUserId, function (CmsContentEvents $events) use ($actorUserId, $id, $locale, $segment): string {
+        return $this->runtime->execute($actorUserId, function (CmsContentEvents $events) use ($actorUserId, $id, $normalizedLocale, $normalizedSegment): string {
             if ($this->model->rootForUpdate($id) === null) {
                 throw new DomainException($this->validation('not_found'));
             }
-            if ($this->model->translationForUpdate($id, $locale) === null && !$this->runtime->isEnabledLocale($locale)) {
+            if ($this->model->translationForUpdate($id, $normalizedLocale) === null && !$this->runtime->isEnabledLocale($normalizedLocale)) {
                 throw new DomainException($this->validation('locale_invalid'));
             }
-            $currentPath = $this->routes->reservationPath($this->definition->moduleCode, $id, $locale);
-            if ($currentPath !== null && basename($currentPath) === $segment) {
+            $currentPath = $this->routes->reservationPath($this->definition->getModuleCode(), $id, $normalizedLocale);
+            if ($currentPath !== null && basename($currentPath) === $normalizedSegment) {
                 $events->noOp();
 
-                return $segment;
+                return $normalizedSegment;
             }
             try {
                 $pathPrefix = $currentPath === null
-                    ? $this->definition->routePrefix($locale)
+                    ? $this->definition->routePrefix($normalizedLocale)
                     : $this->pathPrefix($currentPath);
-                $path = $pathPrefix === '' ? $segment : $pathPrefix . '/' . $segment;
-                $this->routes->reserveExplicit($this->definition->moduleCode, $id, $locale, $path);
+                $path = $pathPrefix === '' ? $normalizedSegment : $pathPrefix . '/' . $normalizedSegment;
+                $this->routes->reserveExplicit($this->definition->getModuleCode(), $id, $normalizedLocale, $path);
             } catch (CmsRouteValidationException $exception) {
                 throw new DomainException(match ($exception->getMessage()) {
                     'cms.route.path_reserved' => 'admin.url_segment.reserved',
@@ -231,14 +236,14 @@ final readonly class CmsContentLifecycle
                 }, previous: $exception);
             }
             $this->model->saveRoot($id, ['updated_by' => $actorUserId], date('Y-m-d H:i:s'));
-            $this->record($events, 'updated', $id, ['locale' => $locale]);
+            $this->record($events, 'updated', $id, ['locale' => $normalizedLocale]);
 
-            return $segment;
+            return $normalizedSegment;
         });
     }
 
     /**
-     * Soft delete zachova rezervovane canonical routy
+     * Soft deletes a record while preserving reserved canonical routes
      */
     public function delete(int $actorUserId, int $id): void
     {
@@ -254,13 +259,13 @@ final readonly class CmsContentLifecycle
             }
             $now = date('Y-m-d H:i:s');
             $this->model->saveRoot($id, ['deleted_at' => $now, 'deleted_by' => $actorUserId, 'updated_by' => $actorUserId], $now);
-            $this->routes->softDeleteForTarget($this->definition->moduleCode, $id, $now);
+            $this->routes->softDeleteForTarget($this->definition->getModuleCode(), $id, $now);
             $this->record($events, 'deleted', $id);
         });
     }
 
     /**
-     * Obnovi vsechny mutace jako koncept a znovu aktivuje routy
+     * Restores all translations as drafts and reactivates their routes
      */
     public function restore(int $actorUserId, int $id): void
     {
@@ -276,13 +281,13 @@ final readonly class CmsContentLifecycle
             }
             $now = date('Y-m-d H:i:s');
             $this->model->restoreDraft($id, $actorUserId, $now);
-            $this->routes->restoreForTarget($this->definition->moduleCode, $id, $now);
+            $this->routes->restoreForTarget($this->definition->getModuleCode(), $id, $now);
             $this->record($events, 'restored', $id);
         });
     }
 
     /**
-     * Preda vlastnictvi existujicimu lokalnimu uzivateli
+     * Transfers ownership to an existing local user
      */
     public function transferOwner(int $actorUserId, int $id, int $newOwnerId): void
     {
@@ -306,11 +311,11 @@ final readonly class CmsContentLifecycle
     }
 
     /**
-     * Vrati modulovy klic validacni chyby
+     * Returns a module-specific validation translation key
      */
     private function validation(string $key): string
     {
-        return $this->definition->validationPrefix . '.validation.' . $key;
+        return $this->definition->getValidationPrefix() . '.validation.' . $key;
     }
 
     /**
@@ -324,16 +329,16 @@ final readonly class CmsContentLifecycle
     }
 
     /**
-     * Zaznamena udalost pod canonical identitou konkretniho modulu
+     * Records an event under the module's canonical identity
      *
      * @param array<string,mixed> $payload
      */
     private function record(CmsContentEvents $events, string $suffix, int $id, array $payload = []): void
     {
         $events->record(
-            $this->definition->moduleCode . '.' . $suffix,
-            $this->definition->moduleCode,
-            $this->definition->entityType,
+            $this->definition->getModuleCode() . '.' . $suffix,
+            $this->definition->getModuleCode(),
+            $this->definition->getEntityType(),
             $id,
             $payload,
         );

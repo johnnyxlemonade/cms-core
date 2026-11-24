@@ -10,12 +10,12 @@ use Lemonade\Framework\Routing\Router;
 use Lemonade\Framework\Routing\RouteRegistrarInterface;
 
 /**
- * Registruje zachytnou verejnou CMS routu
+ * Registers the public CMS fallback route
  */
 final readonly class PublicCmsRouteRegistrar implements RouteRegistrarInterface
 {
     /**
-     * Vrati stabilni identifikator fallback registraru
+     * Returns the stable identifier of the fallback registrar
      */
     public function id(): string
     {
@@ -23,7 +23,7 @@ final readonly class PublicCmsRouteRegistrar implements RouteRegistrarInterface
     }
 
     /**
-     * Urcuje, ze fallback nasleduje az po konkretnich routach
+     * Places the fallback after concrete routes
      */
     public function priority(): int
     {
@@ -31,7 +31,7 @@ final readonly class PublicCmsRouteRegistrar implements RouteRegistrarInterface
     }
 
     /**
-     * Registruje package-neutralni fallback pro verejne CMS cesty
+     * Registers the module-neutral fallback for public CMS paths
      */
     public function registerRoutes(Router $router): void
     {

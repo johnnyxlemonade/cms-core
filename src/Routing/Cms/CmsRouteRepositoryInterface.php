@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Lemonade\Cms\Routing\Cms;
 
 /**
- * Definuje uloziste verejnych CMS rout
+ * Defines the public CMS route repository contract
  */
 interface CmsRouteRepositoryInterface
 {
     /**
-     * Najde verejnou CMS routu podle cesty
+     * Finds a public CMS route by path
      */
     public function find(string $locale, string $path): ?CmsRoute;
 }

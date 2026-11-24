@@ -8,25 +8,25 @@ use Lemonade\Framework\Database\Exception\DatabaseException;
 use RuntimeException;
 
 /**
- * Resolvuje a bezpecne rezervuje canonical CMS cestu pro jeden module target
+ * Reserves canonical CMS paths for module targets
  */
-final class CmsRouteReservationService
+final readonly class CmsRouteReservationService
 {
     private const MAXIMUM_RESERVATION_ATTEMPTS = 4;
 
     private const MAXIMUM_PATH_LENGTH = 700;
 
     /**
-     * Nastavuje persistence rout a resolver volnych suffix kandidatu
+     * Receives route persistence and path reservation dependencies
      */
     public function __construct(
-        private readonly CmsRouteRepository $routes,
-        private readonly CmsRouteCandidateResolver $candidates,
-        private readonly CmsReservedPathGuard $reservedPaths,
+        private CmsRouteRepository $routes,
+        private CmsRouteCandidateResolver $candidates,
+        private CmsReservedPathGuard $reservedPaths,
     ) {}
 
     /**
-     * Rozhodne, zda target jiz vlastni canonical route v pozadovanem locale
+     * Reports whether a target already owns a canonical route in a locale
      */
     public function hasReservation(string $moduleCode, int $entityId, string $locale): bool
     {
@@ -34,15 +34,15 @@ final class CmsRouteReservationService
     }
 
     /**
-     * Vrati aktualni canonical cestu targetu pro no-op rozhodnuti
+     * Returns the current canonical path for a target
      */
     public function reservationPath(string $moduleCode, int $entityId, string $locale): ?string
     {
-        return $this->routes->findForTarget($moduleCode, $entityId, $locale)?->path();
+        return $this->routes->findForTarget($moduleCode, $entityId, $locale)?->getPath();
     }
 
     /**
-     * Vybere volny candidate a target-safe jej rezervuje s omezenym retry pri soubehu
+     * Reserves an available path with bounded retries on concurrent writes
      */
     public function reserveAutomatic(
         string $moduleCode,
@@ -73,7 +73,7 @@ final class CmsRouteReservationService
                     moduleCode: $moduleCode,
                     entityId: $entityId,
                     locale: $locale,
-                    path: $reservation->path(),
+                    path: $reservation->getPath(),
                 );
 
                 return $reservation;
@@ -88,7 +88,7 @@ final class CmsRouteReservationService
     }
 
     /**
-     * Rezervuje explicitni cestu nebo ji odmitne jako neplatnou ci obsazenou
+     * Reserves an explicit path or rejects an invalid or occupied path
      */
     public function reserveExplicit(
         string $moduleCode,
@@ -113,7 +113,7 @@ final class CmsRouteReservationService
     }
 
     /**
-     * Atomicky prepise existujici routy podstromu po predchozi kontrole cele sady
+     * Atomically replaces a validated set of subtree routes
      *
      * @param non-empty-list<array{entityId:int,locale:string,path:string}> $replacements
      */
@@ -152,9 +152,9 @@ final class CmsRouteReservationService
                         throw new CmsRouteValidationException('cms.route.path_reserved');
                     }
                     foreach ($this->routes->routesForLocale($replacement['locale']) as $route) {
-                        $ownerKey = $route->locale() . ':' . $route->entityId();
-                        if ($route->path() === $replacement['path']
-                            && !($route->moduleCode() === $moduleCode && isset($targets[$ownerKey]))
+                        $ownerKey = $route->getLocale() . ':' . $route->getEntityId();
+                        if ($route->getPath() === $replacement['path']
+                            && !($route->getModuleCode() === $moduleCode && isset($targets[$ownerKey]))
                         ) {
                             throw new CmsRouteValidationException('cms.route.path_occupied');
                         }
@@ -192,7 +192,7 @@ final class CmsRouteReservationService
     }
 
     /**
-     * Skryje routy smazane entity bez uvolneni jejich URL adres
+     * Hides routes of a deleted entity while preserving their reservations
      */
     public function softDeleteForTarget(string $moduleCode, int $entityId, string $now): void
     {
@@ -200,7 +200,7 @@ final class CmsRouteReservationService
     }
 
     /**
-     * Znovu aktivuje driv rezervovane routy obnovene entity
+     * Reactivates previously reserved routes of a restored entity
      */
     public function restoreForTarget(string $moduleCode, int $entityId, string $now): void
     {
@@ -208,7 +208,7 @@ final class CmsRouteReservationService
     }
 
     /**
-     * Rozpozna databazovou kolizi unikatu, ktera muze vzniknout jen pri soubehu
+     * Detects a unique key conflict caused by a concurrent reservation
      */
     private function isUniqueConflict(DatabaseException $exception): bool
     {
@@ -218,7 +218,7 @@ final class CmsRouteReservationService
     }
 
     /**
-     * Normalizuje a overi ulozitelnou nerootovou CMS cestu
+     * Normalizes and validates a nonroot CMS path
      */
     private function validatedPath(string $path): string
     {
@@ -253,15 +253,15 @@ final class CmsRouteReservationService
     }
 
     /**
-     * Overi, ze explicitni cesta nepatri jinemu targetu ve stejnem locale
+     * Checks that another target does not own the path in the same locale
      */
     private function assertAvailable(string $moduleCode, int $entityId, string $locale, string $path): void
     {
         foreach ($this->routes->routesForLocale($locale) as $route) {
-            if ($route->path() !== $path) {
+            if ($route->getPath() !== $path) {
                 continue;
             }
-            if ($route->moduleCode() === $moduleCode && $route->entityId() === $entityId) {
+            if ($route->getModuleCode() === $moduleCode && $route->getEntityId() === $entityId) {
                 return;
             }
 

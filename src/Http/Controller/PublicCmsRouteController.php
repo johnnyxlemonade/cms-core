@@ -9,24 +9,22 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * Predava verejnou CMS cestu package-neutralnimu resolveru modulu
+ * Passes a public CMS path to the module-neutral resolver
  */
 final readonly class PublicCmsRouteController
 {
     /**
-     * Nastavuje resolver verejnych CMS cest
+     * Receives the public CMS route resolver
      */
     public function __construct(
         private PublicCmsRouteResolver $resolver,
     ) {}
 
     /**
-     * Predava aktualni URL resolveru verejne CMS cesty
+     * Passes the current URL to the public CMS route resolver
      */
     public function show(string $path, ServerRequestInterface $request): ResponseInterface
     {
-        unset($path);
-
         return $this->resolver->resolve();
     }
 }

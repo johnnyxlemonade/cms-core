@@ -7,17 +7,17 @@ namespace Lemonade\Cms\Routing\Cms;
 use Lemonade\Framework\Database\Database;
 
 /**
- * Vyhledava kanonicke CMS routy pro verejny transport modulu
+ * Finds canonical CMS routes for public module transport
  */
 final readonly class CmsRouteRepository implements CmsRouteRepositoryInterface
 {
     /**
-     * Nastavuje databazove uloziste kanonickych cest
+     * Receives the canonical route database storage
      */
     public function __construct(private Database $database) {}
 
     /**
-     * Najde kanonickou cestu v pozadovane lokalizaci
+     * Finds a canonical path in the requested locale
      */
     public function find(string $locale, string $path): ?CmsRoute
     {
@@ -25,22 +25,11 @@ final readonly class CmsRouteRepository implements CmsRouteRepositoryInterface
             'SELECT id, module_code, entity_id, locale, path FROM cms_route WHERE locale = ? AND path = ? AND deleted_at IS NULL',
             [$locale, $path],
         );
-        $row = $rows[0] ?? null;
-        if (!is_array($row)) {
-            return null;
-        }
-
-        return new CmsRoute(
-            (int) $row['id'],
-            (string) $row['module_code'],
-            (int) $row['entity_id'],
-            (string) $row['locale'],
-            (string) $row['path'],
-        );
+        return $this->route($rows[0] ?? null);
     }
 
     /**
-     * Najde route vlastnene konkretnim module targetem bez ohledu na soft delete
+     * Finds a module target's route including soft deleted routes
      */
     public function findForTarget(string $moduleCode, int $entityId, string $locale): ?CmsRoute
     {
@@ -53,7 +42,7 @@ final readonly class CmsRouteRepository implements CmsRouteRepositoryInterface
     }
 
     /**
-     * Nacte vsechny routy locale vcetne rezervovanych smazanych cest
+     * Loads all locale routes including reserved deleted paths
      *
      * @return list<CmsRoute>
      */
@@ -74,7 +63,7 @@ final readonly class CmsRouteRepository implements CmsRouteRepositoryInterface
     }
 
     /**
-     * Vlozi novou route nebo zmeni vyhradne cestu existujiciho stejneho targetu
+     * Inserts a route or changes only the path of its existing target
      */
     public function reserve(string $moduleCode, int $entityId, string $locale, string $path): void
     {
@@ -95,7 +84,7 @@ final readonly class CmsRouteRepository implements CmsRouteRepositoryInterface
     }
 
     /**
-     * Provede callback ve sdilene databazove transakci
+     * Runs a callback in the shared database transaction
      *
      * @template T
      * @param callable():T $callback
@@ -107,7 +96,7 @@ final readonly class CmsRouteRepository implements CmsRouteRepositoryInterface
     }
 
     /**
-     * Zmeni cestu existujiciho targetu bez zmeny jeho lifecycle stavu
+     * Changes an existing target path without changing lifecycle state
      */
     public function updatePath(string $moduleCode, int $entityId, string $locale, string $path, string $now): void
     {
@@ -118,7 +107,7 @@ final readonly class CmsRouteRepository implements CmsRouteRepositoryInterface
     }
 
     /**
-     * Skryje routy smazane entity bez uvolneni jejich URL adres
+     * Hides deleted entity routes without releasing their URLs
      */
     public function softDeleteForTarget(string $moduleCode, int $entityId, string $now): void
     {
@@ -129,7 +118,7 @@ final readonly class CmsRouteRepository implements CmsRouteRepositoryInterface
     }
 
     /**
-     * Znovu aktivuje driv rezervovane routy obnovene entity
+     * Reactivates reserved routes for a restored entity
      */
     public function restoreForTarget(string $moduleCode, int $entityId, string $now): void
     {
@@ -140,7 +129,7 @@ final readonly class CmsRouteRepository implements CmsRouteRepositoryInterface
     }
 
     /**
-     * Prevede databazovy radek na canonical route nebo vrati null pro neplatna data
+     * Maps a database row to a canonical route or returns null for invalid data
      *
      * @param array<string,mixed>|null $row
      */

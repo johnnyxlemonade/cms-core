@@ -7,12 +7,12 @@ namespace Lemonade\Cms\Routing\Locale;
 use RuntimeException;
 
 /**
- * Popisuje atomicky stav systemovych jazyku pro verejne routovani
+ * Represents an atomic system language snapshot for public routing
  */
 final readonly class PublicLocaleSnapshot
 {
     /**
-     * Nastavuje vychozi, aktivni a zname verejne lokalizace
+     * Receives the default, enabled and known public locales
      *
      * @param list<string> $enabledLocales
      * @param list<string> $knownLocales
@@ -24,7 +24,7 @@ final readonly class PublicLocaleSnapshot
     ) {}
 
     /**
-     * Vytvori snapshot z canonical radku systemovych jazyku
+     * Creates a snapshot from canonical system language rows
      *
      * @param list<array{code:mixed,enabled:mixed,is_default:mixed}> $rows
      */
@@ -61,15 +61,15 @@ final readonly class PublicLocaleSnapshot
     }
 
     /**
-     * Vrati vychozi lokalizaci bez URL prefixu
+     * Returns the default locale without a URL prefix
      */
-    public function defaultLocale(): string
+    public function getDefaultLocale(): string
     {
         return $this->defaultLocale;
     }
 
     /**
-     * Overi aktivni nevychozi lokalizaci pro locale prefix
+     * Checks an enabled nondefault locale for a locale prefix
      */
     public function isEnabledNonDefault(string $locale): bool
     {
@@ -77,7 +77,7 @@ final readonly class PublicLocaleSnapshot
     }
 
     /**
-     * Overi, zda kod odpovida znamemu systemovemu jazyku
+     * Checks whether a code is a known system language
      */
     public function isKnownLocale(string $locale): bool
     {

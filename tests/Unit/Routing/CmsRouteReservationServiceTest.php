@@ -21,12 +21,12 @@ use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Overuje omezeny retry canonical rezervace bez databazove infrastruktury
+ * Verifies bounded canonical reservation retries without a database
  */
 final class CmsRouteReservationServiceTest extends TestCase
 {
     /**
-     * Existujici target je rozpoznan bez nove rezervace canonical cesty
+     * Recognizes an existing target without reserving a new path
      */
     public function testRecognizesExistingTargetReservation(): void
     {
@@ -39,7 +39,7 @@ final class CmsRouteReservationServiceTest extends TestCase
     }
 
     /**
-     * Po soubezne kolizi znovu nacte routy a vybere nasledujici suffix
+     * Reloads routes and chooses the next suffix after a concurrent conflict
      */
     public function testRetriesUniqueConflictWithNextCandidate(): void
     {
@@ -48,12 +48,12 @@ final class CmsRouteReservationServiceTest extends TestCase
 
         $reservation = $service->reserveAutomatic('cms.news', 7, 'cs', 'test');
 
-        self::assertSame('test-1', $reservation->slug());
+        self::assertSame('test-1', $reservation->getSlug());
         self::assertSame(['test', 'test-1'], $connection->attemptedPaths);
     }
 
     /**
-     * Trvala kolize skonci po pevnem poctu pokusu
+     * Stops after a fixed number of repeated conflicts
      */
     public function testStopsAfterMaximumReservationAttempts(): void
     {
@@ -69,7 +69,7 @@ final class CmsRouteReservationServiceTest extends TestCase
     }
 
     /**
-     * Automaticka rezervace preskoci zakazany systemovy segment suffixem
+     * Automatic reservation avoids a reserved system segment with a suffix
      */
     public function testAutomaticReservationSkipsReservedSystemPath(): void
     {
@@ -78,11 +78,11 @@ final class CmsRouteReservationServiceTest extends TestCase
 
         $reservation = $service->reserveAutomatic('cms.news', 7, 'cs', 'api');
 
-        self::assertSame('api-1', $reservation->path());
+        self::assertSame('api-1', $reservation->getPath());
     }
 
     /**
-     * Explicitni rezervace zakazane cesty skonci validacni chybou
+     * Explicit reservation rejects a reserved path
      */
     public function testExplicitReservationRejectsReservedPath(): void
     {
@@ -95,7 +95,7 @@ final class CmsRouteReservationServiceTest extends TestCase
     }
 
     /**
-     * Explicitni kolize se neprepisuje suffixem a neprovede zadny zapis
+     * Explicit conflicts are not suffixed and cause no write
      */
     public function testExplicitReservationRejectsOccupiedPathWithoutSuffix(): void
     {
@@ -112,7 +112,7 @@ final class CmsRouteReservationServiceTest extends TestCase
     }
 
     /**
-     * Presun podstromu meni vsechny cesty uvnitr jedine transakce
+     * Moves all subtree paths in one transaction
      */
     public function testReplacesSubtreePathsInSingleTransaction(): void
     {
@@ -152,12 +152,12 @@ final class CmsRouteReservationServiceTest extends TestCase
 }
 
 /**
- * Poskytuje locale snapshot pro testy route rezervace
+ * Provides a locale snapshot for route reservation tests
  */
 final readonly class ReservationLocaleRegistry implements PublicLocaleRegistryInterface
 {
     /**
-     * Vrati aktivni vychozi locale
+     * Returns the enabled default locale
      */
     public function snapshot(): PublicLocaleSnapshot
     {
@@ -167,11 +167,18 @@ final readonly class ReservationLocaleRegistry implements PublicLocaleRegistryIn
     }
 }
 
+/**
+ * Simulates database changes during subtree reservations
+ */
 final class BatchReservationConnection implements ConnectionInterface
 {
     public int $transactions = 0;
 
-    /** @param list<array{id:int,module_code:string,entity_id:int,locale:string,path:string}> $rows */
+    /**
+     * Receives canonical route rows for the batch scenario
+     *
+     * @param list<array{id:int,module_code:string,entity_id:int,locale:string,path:string}> $rows
+     */
     public function __construct(public array $rows) {}
 
     public function select(string $sql, array $bindings = []): array
@@ -254,12 +261,23 @@ final class BatchReservationConnection implements ConnectionInterface
     }
 }
 
+/**
+ * Simulates competing canonical path reservations
+ */
 final class ReservationConnection implements ConnectionInterface
 {
-    /** @var list<string> */
+    /**
+     * Paths attempted during reservation
+     *
+     * @var list<string>
+     */
     public array $attemptedPaths = [];
 
-    /** @param list<string> $occupiedPaths */
+    /**
+     * Receives paths reserved by a competing target
+     *
+     * @param list<string> $occupiedPaths
+     */
     public function __construct(
         private int $failuresRemaining,
         private readonly ?string $targetPath = null,
