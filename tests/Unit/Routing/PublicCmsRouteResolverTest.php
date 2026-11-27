@@ -136,6 +136,45 @@ final class PublicCmsRouteResolverTest extends TestCase
         $secondScope->close();
     }
 
+    public function testExactHandlerTakesPrecedenceOverPrefixFactory(): void
+    {
+        $handlers = new PublicCmsRouteHandlerRegistry();
+        $exact = new FakeHandler();
+        $handlers->registerPrefixFactory('cms.type_', static function (): FakeHandler {
+            self::fail('Exact registration must win');
+        });
+        $handlers->register('cms.type_42', $exact);
+        self::assertSame($exact, $handlers->handlerFor('cms.type_42', new Container()));
+    }
+
+    public function testRejectsOverlappingPrefixesInEitherRegistrationOrder(): void
+    {
+        foreach ([['cms.', 'cms.type_'], ['cms.type_', 'cms.']] as [$first, $second]) {
+            $handlers = new PublicCmsRouteHandlerRegistry();
+            $factory = static fn(): FakeHandler => new FakeHandler();
+            $handlers->registerPrefixFactory($first, $factory);
+            try {
+                $handlers->registerPrefixFactory($second, $factory);
+                self::fail('Overlapping prefixes were accepted');
+            } catch (\InvalidArgumentException $exception) {
+                self::assertSame('CMS module code prefixes must not overlap.', $exception->getMessage());
+            }
+        }
+    }
+
+    public function testPrefixFactoryHandlesDynamicModuleCodesWithoutCatalogRegistration(): void
+    {
+        $handlers = new PublicCmsRouteHandlerRegistry();
+        $handler = new FakeHandler();
+        $handlers->registerPrefixFactory(
+            'cms.type_',
+            static fn(ContainerInterface $container): FakeHandler => $handler,
+        );
+
+        self::assertSame($handler, $handlers->handlerFor('cms.type_42', new Container()));
+        self::assertNull($handlers->handlerFor('cms.news', new Container()));
+    }
+
     public function testCanonicalUrlBuilderOmitsOnlyTheDefaultLocale(): void
     {
         $builder = new \Lemonade\Cms\Routing\Cms\PublicCmsUrlBuilder();

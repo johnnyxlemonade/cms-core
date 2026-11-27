@@ -20,6 +20,13 @@ final class PublicCmsRouteHandlerRegistry
     private array $handlers = [];
 
     /**
+     * Lazy handlers shared by dynamic module code families
+     *
+     * @var array<string,Closure(ContainerInterface):PublicCmsRouteHandlerInterface>
+     */
+    private array $prefixFactories = [];
+
+    /**
      * Assigns a handler to a module with an active public route
      */
     public function register(string $moduleCode, PublicCmsRouteHandlerInterface $handler): void
@@ -38,6 +45,27 @@ final class PublicCmsRouteHandlerRegistry
     }
 
     /**
+     * Registers one lazy handler factory for a dynamic module code prefix
+     *
+     * @param Closure(ContainerInterface):PublicCmsRouteHandlerInterface $handler
+     */
+    public function registerPrefixFactory(string $moduleCodePrefix, Closure $handler): void
+    {
+        if ($moduleCodePrefix === '') {
+            throw new \InvalidArgumentException('CMS module code prefix must not be empty.');
+        }
+
+        foreach (array_keys($this->prefixFactories) as $registeredPrefix) {
+            if ($registeredPrefix !== $moduleCodePrefix
+                && (str_starts_with($registeredPrefix, $moduleCodePrefix) || str_starts_with($moduleCodePrefix, $registeredPrefix))) {
+                throw new \InvalidArgumentException('CMS module code prefixes must not overlap.');
+            }
+        }
+
+        $this->prefixFactories[$moduleCodePrefix] = $handler;
+    }
+
+    /**
      * Returns the handler contributed for a module
      */
     public function handlerFor(string $moduleCode, ContainerInterface $container): ?PublicCmsRouteHandlerInterface
@@ -47,6 +75,16 @@ final class PublicCmsRouteHandlerRegistry
             return $handler($container);
         }
 
-        return $handler;
+        if ($handler !== null) {
+            return $handler;
+        }
+
+        foreach ($this->prefixFactories as $prefix => $factory) {
+            if (str_starts_with($moduleCode, $prefix)) {
+                return $factory($container);
+            }
+        }
+
+        return null;
     }
 }
